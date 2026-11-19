@@ -73,5 +73,5 @@ Preferências do responsável pelo projeto:
 
 ## Estado atual
 - [x] Levantamento de requisitos v1 (`docs/LEVANTAMENTO.md`).
-- [ ] Criar a solution e os cinco projetos vazios, com referências entre eles.
+- [x] Criar a solution e os cinco projetos vazios, com referências entre eles.
 - [ ] Protótipo das telas (principal com seleção de empresa, cadastros, emissão CT-e, emissão MDF-e).
