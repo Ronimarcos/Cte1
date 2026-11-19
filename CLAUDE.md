@@ -14,6 +14,7 @@ Escopo, decisões, modelo de dados e pendências estão em `docs/LEVANTAMENTO.md
 - Banco: SQLite via EF Core na v1 (PostgreSQL na fase web).
 - PDF (DACTE/DAMDFE): QuestPDF.
 - Idioma de comentários, logs e mensagens de UI: Português (pt-BR).
+- Responder ao usuário sempre em pt-BR.
 - Nomenclatura de código: PascalCase para classes, métodos e propriedades; camelCase para variáveis locais e parâmetros; campos privados com `_campo`.
 
 ## Estrutura da solution
