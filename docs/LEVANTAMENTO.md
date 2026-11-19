@@ -238,9 +238,26 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 5 | Confirmar exigência de CSRT pela SEFAZ-MT | Desenvolvimento |
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
+| 8 | Enviar imagens de referência das telas de cadastro para definir o padrão | Roni |
 
 ## 8. Próximos passos
 
 1. Criar a solution e os projetos vazios (§3.1) e fazer o primeiro commit.
 2. Prototipar as telas: principal (seleção de empresa), cadastros (§5), emissão de CT-e e emissão de MDF-e.
 3. Validar as telas antes de implementar persistência e integração com a SEFAZ.
+
+### 8.1 Decisões do protótipo (19/11/2026)
+
+| Tema | Decisão |
+|---|---|
+| Tela principal | Mantém o formato já validado (MDI com menus e barra de status do ambiente). Não adotar a barra lateral do sistema de referência. |
+| Próxima fatia | Telas de cadastro (§5), com dados fictícios em memória. |
+| Padrão das telas de cadastro | **Aguardando imagens de referência** (pendência 8). Não planejar antes de recebê-las. |
+| Controle de usuários / login | Fora da v1; entra em versão futura. |
+| Certificado digital, municípios (IBGE) e validações de CNPJ/CPF | Ficam para depois da validação visual das telas. |
+
+Referência de usabilidade vista (fluxo de emissão de outro emissor web), usada só como inspiração, sem copiar marca ou identidade visual:
+
+- Listas em grade com pesquisa, filtro, seleção por linha, situação em etiqueta colorida e menu de ações por linha; botões "Novo" e "Em lote" no topo.
+- Emissão de CT-e em assistente: documento que o usuário tem (NF-e, CT-e de outra transportadora, nota de produtor, outro) → tipo de serviço (subcontratação, redespacho, redespacho intermediário) → origem do documento (XML, chave de acesso, digitação) → documentos da carga com totais (produto predominante, valor, peso com unidade) → conferência (remetente, destinatário, tomador, expedidor/recebedor, CFOP sugerido, componentes do frete, tributação, informações adicionais) → salvar e emitir, com aviso de espera da SEFAZ e de autorização.
+- Participantes escolhidos em lista com botões de editar e incluir, permitindo cadastrar sem sair da emissão.
