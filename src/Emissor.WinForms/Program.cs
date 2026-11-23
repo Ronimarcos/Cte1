@@ -15,7 +15,7 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         EmpresaPrototipo? empresa;
-        using (var selecao = new FormSelecaoEmpresa(DadosFicticios.Empresas))
+        using (var selecao = new FormSelecaoEmpresa(DadosFicticios.Empresas.Listar()))
         {
             if (selecao.ShowDialog() != DialogResult.OK)
             {

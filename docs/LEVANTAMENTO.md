@@ -238,7 +238,7 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 5 | Confirmar exigência de CSRT pela SEFAZ-MT | Desenvolvimento |
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
-| 8 | Enviar imagens de referência das telas de cadastro para definir o padrão | Roni |
+| 8 | ~~Enviar imagens de referência das telas de cadastro~~ — encerrada em 23/11/2026: seguido o padrão proposto (§8.1) | Roni |
 
 ## 8. Próximos passos
 
@@ -252,7 +252,8 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 |---|---|
 | Tela principal | Mantém o formato já validado (MDI com menus e barra de status do ambiente). Não adotar a barra lateral do sistema de referência. |
 | Próxima fatia | Telas de cadastro (§5), com dados fictícios em memória. |
-| Padrão das telas de cadastro | **Aguardando imagens de referência** (pendência 8). Não planejar antes de recebê-las. |
+| Padrão das telas de cadastro | Sem imagens de referência (23/11/2026), adotado o padrão proposto: janela MDI com lista (pesquisa, grade, Novo/Editar/Excluir/Fechar; duplo clique, Enter e Delete) e edição em diálogo modal com Salvar/Cancelar. Campos obrigatórios marcados com `*`. |
+| Fatia 1 dos cadastros (23/11/2026) | Empresa, Participante, Veículo e Proprietário de veículo, com dados fictícios em memória. Certificados, Séries, Motoristas e Apólices ficam para a fatia 2. |
 | Controle de usuários / login | Fora da v1; entra em versão futura. |
 | Certificado digital, municípios (IBGE) e validações de CNPJ/CPF | Ficam para depois da validação visual das telas. |
 

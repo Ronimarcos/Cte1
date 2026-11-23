@@ -1,3 +1,4 @@
+using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
 
 namespace Emissor.WinForms.Formularios;
@@ -9,6 +10,9 @@ public partial class FormPrincipal : Form
 {
     private const string TituloAplicacao = "Emissor CT-e / MDF-e";
 
+    /// <summary>Opções de menu que já têm tela de cadastro; as demais abrem a tela provisória.</summary>
+    private readonly Dictionary<ToolStripItem, Func<IFonteCadastro>> _cadastros;
+
     private EmpresaPrototipo _empresaAtiva;
 
     /// <summary>Cria a janela principal já com a empresa escolhida na seleção inicial.</summary>
@@ -17,18 +21,60 @@ public partial class FormPrincipal : Form
     {
         InitializeComponent();
         _empresaAtiva = empresaAtiva;
+
+        // As funções leem _empresaAtiva na hora de abrir, então seguem a troca de empresa.
+        _cadastros = new()
+        {
+            [mnuCadastrosEmpresas] = () => new FonteEmpresas(_empresaAtiva.Id, RecarregarEmpresaAtiva),
+            [mnuCadastrosParticipantes] = () => new FonteParticipantes(_empresaAtiva.Id),
+            [mnuCadastrosVeiculos] = () => new FonteVeiculos(_empresaAtiva.Id),
+            [mnuCadastrosProprietarios] = () => new FonteProprietarios(_empresaAtiva.Id),
+        };
+
         AtualizarEmpresaAtiva();
     }
 
     /// <summary>
-    /// Evento compartilhado pelas opções de menu que ainda não têm tela.
-    /// O título da tela vem da propriedade <c>Tag</c> do item (ou do texto, se não houver Tag).
+    /// Evento compartilhado pelas opções de menu de telas. Abre o cadastro quando a opção já tem tela;
+    /// senão abre a tela provisória, cujo título vem da propriedade <c>Tag</c> do item (ou do texto, se não houver Tag).
     /// </summary>
     private void AbrirTelaEmConstrucao_Click(object? sender, EventArgs e)
     {
-        if (sender is ToolStripMenuItem item)
+        if (sender is not ToolStripMenuItem item)
         {
-            AbrirTelaEmConstrucao(item.Tag as string ?? item.Text?.Replace("&", string.Empty) ?? string.Empty);
+            return;
+        }
+
+        if (_cadastros.TryGetValue(item, out var criarFonte))
+        {
+            AbrirCadastro(criarFonte());
+            return;
+        }
+
+        AbrirTelaEmConstrucao(item.Tag as string ?? item.Text?.Replace("&", string.Empty) ?? string.Empty);
+    }
+
+    /// <summary>Abre a lista do cadastro ou, se já estiver aberta, apenas a traz para frente.</summary>
+    private void AbrirCadastro(IFonteCadastro fonte)
+    {
+        var telaAberta = MdiChildren.OfType<FormListaCadastro>().FirstOrDefault(f => f.Titulo == fonte.Titulo);
+        if (telaAberta is not null)
+        {
+            telaAberta.Activate();
+            return;
+        }
+
+        var tela = new FormListaCadastro(fonte) { MdiParent = this };
+        tela.Show();
+    }
+
+    /// <summary>Relê a empresa ativa depois de uma alteração no cadastro de empresas e atualiza título e barra de status.</summary>
+    private void RecarregarEmpresaAtiva()
+    {
+        if (DadosFicticios.Empresas.ObterPorId(_empresaAtiva.Id) is { } atualizada)
+        {
+            _empresaAtiva = atualizada;
+            AtualizarEmpresaAtiva();
         }
     }
 
@@ -53,7 +99,7 @@ public partial class FormPrincipal : Form
     /// <summary>Exibe a seleção de empresa e, se outra for escolhida, fecha as telas abertas e troca a empresa ativa.</summary>
     private void TrocarEmpresa()
     {
-        using var selecao = new FormSelecaoEmpresa(DadosFicticios.Empresas, _empresaAtiva);
+        using var selecao = new FormSelecaoEmpresa(DadosFicticios.Empresas.Listar(), _empresaAtiva);
         if (selecao.ShowDialog(this) != DialogResult.OK || selecao.EmpresaSelecionada is null)
         {
             return;
