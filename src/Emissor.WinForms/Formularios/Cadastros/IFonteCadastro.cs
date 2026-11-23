@@ -37,4 +37,8 @@ internal interface IFonteCadastro
     /// <param name="dono">Janela que abre a confirmação.</param>
     /// <param name="registro">Registro da linha selecionada.</param>
     bool Excluir(IWin32Window dono, object registro);
+
+    /// <summary>Cor de fundo para destacar a linha do registro (ex.: certificado vencido), ou <c>null</c> para a cor padrão.</summary>
+    /// <param name="registro">Registro da linha.</param>
+    Color? CorDaLinha(object registro);
 }

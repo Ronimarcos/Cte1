@@ -29,6 +29,10 @@ public partial class FormPrincipal : Form
             [mnuCadastrosParticipantes] = () => new FonteParticipantes(_empresaAtiva.Id),
             [mnuCadastrosVeiculos] = () => new FonteVeiculos(_empresaAtiva.Id),
             [mnuCadastrosProprietarios] = () => new FonteProprietarios(_empresaAtiva.Id),
+            [mnuCadastrosCertificados] = () => new FonteCertificados(_empresaAtiva.Id),
+            [mnuCadastrosSeries] = () => new FonteSeries(_empresaAtiva.Id),
+            [mnuCadastrosMotoristas] = () => new FonteMotoristas(_empresaAtiva.Id),
+            [mnuCadastrosApolices] = () => new FonteApolices(_empresaAtiva.Id),
         };
 
         AtualizarEmpresaAtiva();

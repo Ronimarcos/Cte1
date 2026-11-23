@@ -123,6 +123,63 @@ internal static class DadosFicticios
         },
     ]);
 
+    /// <summary>
+    /// Certificados de todas as empresas. As datas são relativas a hoje para mostrar as três situações
+    /// (válido, vencendo em breve e vencido). Não há arquivo .pfx real: o caminho é só ilustrativo.
+    /// </summary>
+    public static RepositorioMemoria<CertificadoPrototipo> Certificados { get; } = new(
+    [
+        new()
+        {
+            EmpresaId = 1, Tipo = TipoCertificado.A1, CaminhoArquivo = @"C:\Certificados\alfa-exemplo.pfx",
+            Titular = "TRANSPORTADORA EXEMPLO ALFA LTDA", CnpjTitular = "11.111.111/0001-11",
+            ValidoDe = DateTime.Today.AddDays(-65), ValidoAte = DateTime.Today.AddDays(300),
+        },
+        new()
+        {
+            EmpresaId = 1, Tipo = TipoCertificado.A3, Thumbprint = "0123456789ABCDEF0123456789ABCDEF01234567",
+            Titular = "TRANSPORTADORA EXEMPLO ALFA LTDA", CnpjTitular = "11.111.111/0001-11",
+            ValidoDe = DateTime.Today.AddDays(-715), ValidoAte = DateTime.Today.AddDays(15),
+        },
+        new()
+        {
+            EmpresaId = 2, Tipo = TipoCertificado.A1, CaminhoArquivo = @"C:\Certificados\beta-exemplo.pfx",
+            Titular = "TRANSPORTADORA EXEMPLO BETA LTDA", CnpjTitular = "22.222.222/0001-22",
+            ValidoDe = DateTime.Today.AddDays(-375), ValidoAte = DateTime.Today.AddDays(-10),
+        },
+    ]);
+
+    /// <summary>Séries de numeração de todas as empresas.</summary>
+    public static RepositorioMemoria<SeriePrototipo> Series { get; } = new(
+    [
+        new() { EmpresaId = 1, Modelo = ModeloDocumento.Cte, Serie = 1, Homologacao = true, ProximoNumero = 15 },
+        new() { EmpresaId = 1, Modelo = ModeloDocumento.Mdfe, Serie = 1, Homologacao = true, ProximoNumero = 4 },
+        new() { EmpresaId = 3, Modelo = ModeloDocumento.Cte, Serie = 1, Homologacao = false, ProximoNumero = 1 },
+    ]);
+
+    /// <summary>Motoristas de todas as empresas.</summary>
+    public static RepositorioMemoria<MotoristaPrototipo> Motoristas { get; } = new(
+    [
+        new() { EmpresaId = 1, Nome = "JOSE EXEMPLO DA SILVA", Cpf = "333.333.333-33", Telefone = "65999990001" },
+        new() { EmpresaId = 1, Nome = "MARIA EXEMPLO SOUZA", Cpf = "444.444.444-44" },
+        new() { EmpresaId = 2, Nome = "JOAO EXEMPLO PEREIRA", Cpf = "555.555.555-55", Telefone = "66999990002" },
+    ]);
+
+    /// <summary>Apólices de seguro de todas as empresas.</summary>
+    public static RepositorioMemoria<ApolicePrototipo> Apolices { get; } = new(
+    [
+        new()
+        {
+            EmpresaId = 1, Responsavel = ResponsavelSeguro.Emitente, NomeSeguradora = "SEGURADORA EXEMPLO S/A",
+            CnpjSeguradora = "88.888.888/0001-88", NumeroApolice = "APOL-0001",
+        },
+        new()
+        {
+            EmpresaId = 1, Responsavel = ResponsavelSeguro.Contratante, CnpjCpfResponsavel = "55.555.555/0001-55",
+            NomeSeguradora = "SEGUROS FICTICIOS S/A", CnpjSeguradora = "99.999.999/0001-99", NumeroApolice = "998877",
+        },
+    ]);
+
     /// <summary>Procura o município pelo código IBGE.</summary>
     /// <param name="codigo">Código IBGE, ou <c>null</c>.</param>
     public static MunicipioPrototipo? ObterMunicipio(int? codigo) =>

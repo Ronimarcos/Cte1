@@ -95,6 +95,13 @@ internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroProt
         return true;
     }
 
+    /// <inheritdoc />
+    public Color? CorDaLinha(object registro) => registro is T item ? CorDoRegistro(item) : null;
+
+    /// <summary>Cor de fundo da linha do registro; o padrão é não destacar.</summary>
+    /// <param name="item">Registro da linha.</param>
+    protected virtual Color? CorDoRegistro(T item) => null;
+
     /// <summary>Indica se o registro aparece nesta lista (ex.: só os da empresa ativa).</summary>
     /// <param name="item">Registro avaliado.</param>
     protected virtual bool PertenceALista(T item) => true;

@@ -61,9 +61,14 @@ internal sealed class FonteEmpresas : FonteCadastro<EmpresaPrototipo>
 
         var temCadastros = DadosFicticios.Participantes.Existe(p => p.EmpresaId == item.Id)
             || DadosFicticios.Veiculos.Existe(v => v.EmpresaId == item.Id)
-            || DadosFicticios.Proprietarios.Existe(p => p.EmpresaId == item.Id);
+            || DadosFicticios.Proprietarios.Existe(p => p.EmpresaId == item.Id)
+            || DadosFicticios.Certificados.Existe(c => c.EmpresaId == item.Id)
+            || DadosFicticios.Series.Existe(s => s.EmpresaId == item.Id)
+            || DadosFicticios.Motoristas.Existe(m => m.EmpresaId == item.Id)
+            || DadosFicticios.Apolices.Existe(a => a.EmpresaId == item.Id);
         return temCadastros
-            ? "A empresa tem participantes, veículos ou proprietários cadastrados e não pode ser excluída."
+            ? "A empresa tem cadastros vinculados (participantes, veículos, proprietários, certificados, séries, "
+                + "motoristas ou apólices) e não pode ser excluída."
             : null;
     }
 

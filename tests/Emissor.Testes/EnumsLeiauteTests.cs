@@ -52,6 +52,16 @@ public class EnumsLeiauteTests
     [InlineData(TipoProprietario.Outros, 2)]
     public void TipoProprietario_TemCodigosDoLeiaute(TipoProprietario valor, int codigo) => Assert.Equal(codigo, (int)valor);
 
+    [Theory]
+    [InlineData(ModeloDocumento.Cte, 57)]
+    [InlineData(ModeloDocumento.Mdfe, 58)]
+    public void ModeloDocumento_TemCodigosDoLeiaute(ModeloDocumento valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(ResponsavelSeguro.Emitente, 1)]
+    [InlineData(ResponsavelSeguro.Contratante, 2)]
+    public void ResponsavelSeguro_TemCodigosDoLeiaute(ResponsavelSeguro valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
     [Fact]
     public void Enums_NaoTemValoresAlemDoLeiaute()
     {
@@ -61,5 +71,7 @@ public class EnumsLeiauteTests
         Assert.Equal(6, Enum.GetValues<TipoRodado>().Length);
         Assert.Equal(6, Enum.GetValues<TipoCarroceria>().Length);
         Assert.Equal(3, Enum.GetValues<TipoProprietario>().Length);
+        Assert.Equal(2, Enum.GetValues<ModeloDocumento>().Length);
+        Assert.Equal(2, Enum.GetValues<ResponsavelSeguro>().Length);
     }
 }

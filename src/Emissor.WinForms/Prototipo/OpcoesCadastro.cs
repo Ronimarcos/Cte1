@@ -94,6 +94,27 @@ public static class OpcoesCadastro
         new(TipoProprietario.Outros, "2 - Outros"),
     ];
 
+    /// <summary>Tipo do certificado digital.</summary>
+    public static IReadOnlyList<Opcao<TipoCertificado>> TiposCertificado { get; } =
+    [
+        new(TipoCertificado.A1, "A1 - Arquivo (.pfx)"),
+        new(TipoCertificado.A3, "A3 - Token ou cartão"),
+    ];
+
+    /// <summary>Modelo do documento fiscal.</summary>
+    public static IReadOnlyList<Opcao<ModeloDocumento>> ModelosDocumento { get; } =
+    [
+        new(ModeloDocumento.Cte, "57 - CT-e"),
+        new(ModeloDocumento.Mdfe, "58 - MDF-e"),
+    ];
+
+    /// <summary>Responsável pelo seguro da carga.</summary>
+    public static IReadOnlyList<Opcao<ResponsavelSeguro>> ResponsaveisSeguro { get; } =
+    [
+        new(ResponsavelSeguro.Emitente, "1 - Emitente do MDF-e"),
+        new(ResponsavelSeguro.Contratante, "2 - Contratante do transporte"),
+    ];
+
     /// <summary>Texto de exibição de um valor, ou vazio quando não informado.</summary>
     /// <typeparam name="T">Tipo do valor.</typeparam>
     /// <param name="opcoes">Lista de opções.</param>

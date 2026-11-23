@@ -17,6 +17,7 @@ public partial class FormListaCadastro : Form
         InitializeComponent();
         _fonte = fonte;
         Text = fonte.Titulo;
+        dgvRegistros.CellFormatting += dgvRegistros_CellFormatting;
         CriarColunas();
         Recarregar();
     }
@@ -42,6 +43,20 @@ public partial class FormListaCadastro : Form
         if (e.RowIndex >= 0)
         {
             EditarSelecionado();
+        }
+    }
+
+    /// <summary>Aplica a cor de destaque que o cadastro definir para a linha (ex.: certificado vencido).</summary>
+    private void dgvRegistros_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.CellStyle is null || dgvRegistros.Rows[e.RowIndex].DataBoundItem is not { } registro)
+        {
+            return;
+        }
+
+        if (_fonte.CorDaLinha(registro) is { } cor)
+        {
+            e.CellStyle.BackColor = cor;
         }
     }
 
