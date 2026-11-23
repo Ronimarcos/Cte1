@@ -81,3 +81,8 @@ Preferências do responsável pelo projeto:
   - [x] Cadastros, fatia 2: Certificados, Séries, Motoristas, Apólices.
   - [x] Emissão de CT-e (`Formularios/Cte`: assistente em 5 etapas + consulta).
   - [x] Emissão de MDF-e (`Formularios/Mdfe`: assistente em 5 etapas + consulta).
+- [ ] Persistência (SQLite/EF Core, `docs/LEVANTAMENTO.md` §8.2).
+  - [x] P1: entidades e regras no Dominio, DbContext, repositório e migração `Inicial` no Dados (`dotnet tool restore` antes de `dotnet ef`).
+  - [ ] P2: telas de cadastro no banco, municípios do IBGE, `appsettings.json`.
+  - [ ] P3: certificado A1/A3 real.
+  - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.

@@ -48,6 +48,8 @@ Os XSD do NT 2026.005 são a fonte única para geração das classes e para vali
 | Comunicação | `HttpClient` com certificado cliente, SOAP 1.2 | Padrão dos webservices CT-e 4.00 e MDF-e 3.00 |
 | DACTE / DAMDFE | QuestPDF | Licença Community gratuita abaixo de US$ 1 mi de faturamento anual |
 | Multiempresa | Tabela `Empresa` e `EmpresaId` em todos os cadastros e documentos | Cada empresa com certificado, séries e numeração próprios |
+| Banco local | `C:\ProgramData\Cte1\emissor.db`, compartilhado pelos usuários Windows da máquina; caminho configurável no `appsettings.json` a partir da fatia P2 | Mesma base para todos os usuários da máquina |
+| Migrações | EF Core 10.0.15 com a ferramenta `dotnet-ef` local (`dotnet-tools.json`); migrações em `Emissor.Dados/Migracoes`, aplicadas ao abrir o sistema | Banco atualizado sem script manual |
 | Repositório | https://github.com/Ronimarcos/Cte1 | |
 
 ### 3.1 Estrutura da solution
@@ -78,6 +80,8 @@ Cte1.sln
 ## 5. Modelo de dados dos cadastros
 
 Convenção: toda entidade de cadastro tem `Id`, `EmpresaId` (exceto `Empresa` e tabelas globais), `Ativo`, `CriadoEm` e `AlteradoEm`. A coluna "Tag XML" indica onde o dado é usado no leiaute.
+
+Documentos são gravados **sem máscara**: CPF, CEP, RNTRC e telefone só com dígitos; CNPJ em maiúsculas com letras e dígitos, porque o leiaute já adota o **CNPJ alfanumérico** (`TCnpj`: `[A-Z0-9]{12}[0-9]{2}`); placa sem hífen (`TPlaca`). O dígito verificador de CNPJ/CPF ainda não é conferido. Participante não tem CNPJ/CPF único por empresa, porque o mesmo documento pode ter mais de uma IE (ex.: produtor rural).
 
 ### 5.1 Empresa (emitente)
 
@@ -266,3 +270,12 @@ Referência de usabilidade vista (fluxo de emissão de outro emissor web), usada
 - Listas em grade com pesquisa, filtro, seleção por linha, situação em etiqueta colorida e menu de ações por linha; botões "Novo" e "Em lote" no topo.
 - Emissão de CT-e em assistente: documento que o usuário tem (NF-e, CT-e de outra transportadora, nota de produtor, outro) → tipo de serviço (subcontratação, redespacho, redespacho intermediário) → origem do documento (XML, chave de acesso, digitação) → documentos da carga com totais (produto predominante, valor, peso com unidade) → conferência (remetente, destinatário, tomador, expedidor/recebedor, CFOP sugerido, componentes do frete, tributação, informações adicionais) → salvar e emitir, com aviso de espera da SEFAZ e de autorização.
 - Participantes escolhidos em lista com botões de editar e incluir, permitindo cadastrar sem sair da emissão.
+
+### 8.2 Persistência (23/11/2026)
+
+| Fatia | Conteúdo | Situação |
+|---|---|---|
+| P1 | Entidades dos cadastros e regras de validação em `Emissor.Dominio`; `EmissorDbContext`, configurações, `RepositorioCadastro<T>` e migração `Inicial` em `Emissor.Dados`; testes com SQLite em memória | Concluída (telas ainda usam dados fictícios) |
+| P2 | Ligar as telas de cadastro ao banco (injeção de dependência, `async`), carga oficial dos municípios do IBGE, dados de demonstração opcionais, `appsettings.json` | Pendente |
+| P3 | Certificado real: A1 criptografado e A3 pelo repositório do Windows, atrás de `IProvedorCertificado` | Pendente |
+| P4 | CT-e e MDF-e gravados no banco, junto com o motor DF-e | Pendente |
