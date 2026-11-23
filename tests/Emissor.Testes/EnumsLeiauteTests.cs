@@ -92,6 +92,38 @@ public class EnumsLeiauteTests
     [InlineData(UnidadeMedidaCarga.Mmbtu, 5)]
     public void UnidadeMedidaCarga_TemCodigosDoLeiaute(UnidadeMedidaCarga valor, int codigo) => Assert.Equal(codigo, (int)valor);
 
+    [Theory]
+    [InlineData(TipoEmitenteMdfe.PrestadorServico, 1)]
+    [InlineData(TipoEmitenteMdfe.CargaPropria, 2)]
+    [InlineData(TipoEmitenteMdfe.CteGlobalizado, 3)]
+    public void TipoEmitenteMdfe_TemCodigosDoLeiaute(TipoEmitenteMdfe valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(TipoTransportador.Etc, 1)]
+    [InlineData(TipoTransportador.Tac, 2)]
+    [InlineData(TipoTransportador.Ctc, 3)]
+    public void TipoTransportador_TemCodigosDoLeiaute(TipoTransportador valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(TipoCargaMdfe.GranelSolido, 1)]
+    [InlineData(TipoCargaMdfe.GranelLiquido, 2)]
+    [InlineData(TipoCargaMdfe.Frigorificada, 3)]
+    [InlineData(TipoCargaMdfe.Conteinerizada, 4)]
+    [InlineData(TipoCargaMdfe.CargaGeral, 5)]
+    [InlineData(TipoCargaMdfe.Neogranel, 6)]
+    [InlineData(TipoCargaMdfe.PerigosaGranelSolido, 7)]
+    [InlineData(TipoCargaMdfe.PerigosaGranelLiquido, 8)]
+    [InlineData(TipoCargaMdfe.PerigosaFrigorificada, 9)]
+    [InlineData(TipoCargaMdfe.PerigosaConteinerizada, 10)]
+    [InlineData(TipoCargaMdfe.PerigosaCargaGeral, 11)]
+    [InlineData(TipoCargaMdfe.GranelPressurizada, 12)]
+    public void TipoCargaMdfe_TemCodigosDoLeiaute(TipoCargaMdfe valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(UnidadePesoMdfe.Quilograma, 1)]
+    [InlineData(UnidadePesoMdfe.Tonelada, 2)]
+    public void UnidadePesoMdfe_TemCodigosDoLeiaute(UnidadePesoMdfe valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
     [Fact]
     public void Enums_NaoTemValoresAlemDoLeiaute()
     {
@@ -107,5 +139,9 @@ public class EnumsLeiauteTests
         Assert.Equal(4, Enum.GetValues<TipoServicoCte>().Length);
         Assert.Equal(5, Enum.GetValues<TomadorServico>().Length);
         Assert.Equal(6, Enum.GetValues<UnidadeMedidaCarga>().Length);
+        Assert.Equal(3, Enum.GetValues<TipoEmitenteMdfe>().Length);
+        Assert.Equal(3, Enum.GetValues<TipoTransportador>().Length);
+        Assert.Equal(12, Enum.GetValues<TipoCargaMdfe>().Length);
+        Assert.Equal(2, Enum.GetValues<UnidadePesoMdfe>().Length);
     }
 }

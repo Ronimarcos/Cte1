@@ -1,5 +1,6 @@
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Formularios.Cte;
+using Emissor.WinForms.Formularios.Mdfe;
 using Emissor.WinForms.Prototipo;
 
 namespace Emissor.WinForms.Formularios;
@@ -43,6 +44,8 @@ public partial class FormPrincipal : Form
         {
             [mnuCteEmitir] = EmitirCte,
             [mnuCteConsultar] = AbrirConsultaCte,
+            [mnuMdfeEmitir] = EmitirMdfe,
+            [mnuMdfeConsultar] = AbrirConsultaMdfe,
         };
 
         ConfigurarAtalhosMenu();
@@ -99,7 +102,8 @@ public partial class FormPrincipal : Form
         mnuCteEmitir.ShortcutKeys = Keys.Control | Keys.T;
         mnuCteConsultar.ShortcutKeys = Keys.Control | Keys.Shift | Keys.T;
         mnuMdfeEmitir.ShortcutKeys = Keys.Control | Keys.M;
-        mnuMdfeConsultar.ShortcutKeys = Keys.Control | Keys.Shift | Keys.M;
+        // Ctrl+Shift+M não serve: o Microsoft Teams usa essa tecla (microfone) em todo o Windows.
+        mnuMdfeConsultar.ShortcutKeys = Keys.Control | Keys.Shift | Keys.D;
         mnuCadastrosParticipantes.ShortcutKeys = Keys.Control | Keys.Shift | Keys.P;
         mnuCadastrosVeiculos.ShortcutKeys = Keys.Control | Keys.Shift | Keys.V;
         mnuCadastrosMotoristas.ShortcutKeys = Keys.Control | Keys.Shift | Keys.O;
@@ -143,6 +147,31 @@ public partial class FormPrincipal : Form
         }
 
         var tela = new FormConsultaCte(_empresaAtiva) { MdiParent = this };
+        tela.Show();
+    }
+
+    /// <summary>Abre o assistente de emissão para um MDF-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
+    private void EmitirMdfe()
+    {
+        var mdfe = new MdfePrototipo { EmpresaId = _empresaAtiva.Id };
+        using var tela = new FormEmissaoMdfe(mdfe, _empresaAtiva);
+        if (tela.ShowDialog(this) == DialogResult.OK)
+        {
+            MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault()?.Recarregar(mdfe.Id);
+        }
+    }
+
+    /// <summary>Abre a consulta de MDF-e ou, se já estiver aberta, apenas a traz para frente.</summary>
+    private void AbrirConsultaMdfe()
+    {
+        var telaAberta = MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault();
+        if (telaAberta is not null)
+        {
+            telaAberta.Activate();
+            return;
+        }
+
+        var tela = new FormConsultaMdfe(_empresaAtiva) { MdiParent = this };
         tela.Show();
     }
 

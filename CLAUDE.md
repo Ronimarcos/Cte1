@@ -75,9 +75,9 @@ Preferências do responsável pelo projeto:
 ## Estado atual
 - [x] Levantamento de requisitos v1 (`docs/LEVANTAMENTO.md`).
 - [x] Criar a solution e os cinco projetos vazios, com referências entre eles.
-- [ ] Protótipo das telas (principal com seleção de empresa, cadastros, emissão CT-e, emissão MDF-e).
+- [x] Protótipo das telas (principal com seleção de empresa, cadastros, emissão CT-e, emissão MDF-e).
   - [x] Principal com seleção de empresa (MDI).
   - [x] Cadastros, fatia 1: Empresa, Participante, Veículo, Proprietário (`Formularios/Cadastros`, lista genérica + diálogo de edição).
   - [x] Cadastros, fatia 2: Certificados, Séries, Motoristas, Apólices.
   - [x] Emissão de CT-e (`Formularios/Cte`: assistente em 5 etapas + consulta).
-  - [ ] Emissão de MDF-e.
+  - [x] Emissão de MDF-e (`Formularios/Mdfe`: assistente em 5 etapas + consulta).

@@ -222,6 +222,36 @@ internal static class DadosFicticios
         },
     ]);
 
+    /// <summary>
+    /// MDF-e da empresa 1 para a consulta. Veículos, motoristas, apólice, série e CT-e são os das listas acima,
+    /// pelo <c>Id</c> gerado na ordem de inclusão. O CIOT é fictício.
+    /// </summary>
+    public static RepositorioMemoria<MdfePrototipo> Mdfes { get; } = new(
+    [
+        new()
+        {
+            EmpresaId = 1, Situacao = SituacaoMdfe.ProntoParaTransmitir, TipoEmitente = TipoEmitenteMdfe.PrestadorServico,
+            TipoTransportador = TipoTransportador.Etc, SerieId = 2, DataEmissao = DateTime.Today.AddDays(-2),
+            InicioViagem = DateTime.Today.AddDays(-2).AddHours(8), UfInicio = "MT", UfFim = "SP", Percurso = ["MS"],
+            MunicipiosCarregamento = [5107925],
+            Descargas = [new() { MunicipioCodigo = 3550308, Documentos = [new() { Tipo = TipoDocumentoMdfe.Cte, CteId = 1 }] }],
+            VeiculoTracaoId = 1, ReboquesIds = [2], CondutoresIds = [1],
+            Ciots = [new() { Ciot = "123456789012", CpfCnpjResponsavel = "11.111.111/0001-11" }],
+            TipoCarga = TipoCargaMdfe.GranelSolido, ProdutoPredominante = "SOJA EM GRAOS", ApoliceId = 1, Averbacoes = ["AVB-000123"],
+            ValorCarga = 150_000m, UnidadePeso = UnidadePesoMdfe.Quilograma, PesoCarga = 32_000m,
+        },
+        new()
+        {
+            EmpresaId = 1, Situacao = SituacaoMdfe.EmDigitacao, TipoEmitente = TipoEmitenteMdfe.PrestadorServico,
+            SerieId = 2, DataEmissao = DateTime.Today, UfInicio = "MT", UfFim = "MT",
+            MunicipiosCarregamento = [5103403],
+            Descargas = [new() { MunicipioCodigo = 5108402, Documentos = [new() { Tipo = TipoDocumentoMdfe.Cte, Chave = ChaveFicticia(57, "11111111000111", 16) }] }],
+            VeiculoTracaoId = 3, CondutoresIds = [2],
+            TipoCarga = TipoCargaMdfe.CargaGeral, ProdutoPredominante = "ALIMENTOS", ApoliceId = 1,
+            ValorCarga = 12_000m, UnidadePeso = UnidadePesoMdfe.Quilograma, PesoCarga = 1_800m,
+        },
+    ]);
+
     /// <summary>Monta uma chave de acesso fictícia de 44 dígitos (MT, mês atual, série 1), sem dígito verificador real.</summary>
     /// <param name="modelo">55 para NF-e, 57 para CT-e.</param>
     /// <param name="cnpj">CNPJ do emitente, só dígitos.</param>

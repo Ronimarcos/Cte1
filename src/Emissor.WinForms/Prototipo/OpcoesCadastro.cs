@@ -153,6 +153,46 @@ public static class OpcoesCadastro
         new(UnidadeMedidaCarga.Mmbtu, "05 - MMBTU"),
     ];
 
+    /// <summary>Tipo do emitente do MDF-e.</summary>
+    public static IReadOnlyList<Opcao<TipoEmitenteMdfe>> TiposEmitenteMdfe { get; } =
+    [
+        new(TipoEmitenteMdfe.PrestadorServico, "1 - Prestador de serviço de transporte"),
+        new(TipoEmitenteMdfe.CargaPropria, "2 - Transportador de carga própria"),
+        new(TipoEmitenteMdfe.CteGlobalizado, "3 - Prestador que emitirá CT-e globalizado"),
+    ];
+
+    /// <summary>Tipo do transportador (opcional no MDF-e).</summary>
+    public static IReadOnlyList<Opcao<TipoTransportador>> TiposTransportador { get; } =
+    [
+        new(TipoTransportador.Etc, "1 - ETC (empresa)"),
+        new(TipoTransportador.Tac, "2 - TAC (autônomo)"),
+        new(TipoTransportador.Ctc, "3 - CTC (cooperativa)"),
+    ];
+
+    /// <summary>Tipo de carga do produto predominante.</summary>
+    public static IReadOnlyList<Opcao<TipoCargaMdfe>> TiposCargaMdfe { get; } =
+    [
+        new(TipoCargaMdfe.GranelSolido, "01 - Granel sólido"),
+        new(TipoCargaMdfe.GranelLiquido, "02 - Granel líquido"),
+        new(TipoCargaMdfe.Frigorificada, "03 - Frigorificada"),
+        new(TipoCargaMdfe.Conteinerizada, "04 - Conteinerizada"),
+        new(TipoCargaMdfe.CargaGeral, "05 - Carga geral"),
+        new(TipoCargaMdfe.Neogranel, "06 - Neogranel"),
+        new(TipoCargaMdfe.PerigosaGranelSolido, "07 - Perigosa (granel sólido)"),
+        new(TipoCargaMdfe.PerigosaGranelLiquido, "08 - Perigosa (granel líquido)"),
+        new(TipoCargaMdfe.PerigosaFrigorificada, "09 - Perigosa (carga frigorificada)"),
+        new(TipoCargaMdfe.PerigosaConteinerizada, "10 - Perigosa (conteinerizada)"),
+        new(TipoCargaMdfe.PerigosaCargaGeral, "11 - Perigosa (carga geral)"),
+        new(TipoCargaMdfe.GranelPressurizada, "12 - Granel pressurizada"),
+    ];
+
+    /// <summary>Unidade do peso bruto no MDF-e.</summary>
+    public static IReadOnlyList<Opcao<UnidadePesoMdfe>> UnidadesPesoMdfe { get; } =
+    [
+        new(UnidadePesoMdfe.Quilograma, "01 - KG"),
+        new(UnidadePesoMdfe.Tonelada, "02 - TON"),
+    ];
+
     /// <summary>Texto de exibição de um valor, ou vazio quando não informado.</summary>
     /// <typeparam name="T">Tipo do valor.</typeparam>
     /// <param name="opcoes">Lista de opções.</param>

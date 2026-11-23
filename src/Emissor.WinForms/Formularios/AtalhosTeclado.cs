@@ -12,7 +12,7 @@ internal static class AtalhosTeclado
         "  Ctrl+T\tEmitir CT-e\n" +
         "  Ctrl+Shift+T\tConsultar CT-e\n" +
         "  Ctrl+M\tEmitir MDF-e\n" +
-        "  Ctrl+Shift+M\tConsultar MDF-e\n" +
+        "  Ctrl+Shift+D\tConsultar MDF-e\n" +
         "  Ctrl+Shift+P\tParticipantes\n" +
         "  Ctrl+Shift+V\tVeículos\n" +
         "  Ctrl+Shift+O\tMotoristas\n" +
@@ -20,7 +20,7 @@ internal static class AtalhosTeclado
         "  Alt+F4\tSair\n" +
         "  Alt + letra sublinhada\tAbre o menu ou aciona o botão\n" +
         "\n" +
-        "LISTAS (cadastros e consulta de CT-e)\n" +
+        "LISTAS (cadastros e consultas de CT-e e MDF-e)\n" +
         "  Insert ou F2\tNovo\n" +
         "  Enter\tEditar / abrir\n" +
         "  Delete\tExcluir\n" +
@@ -31,7 +31,7 @@ internal static class AtalhosTeclado
         "  Enter ou Ctrl+S\tSalvar\n" +
         "  Esc\tCancelar\n" +
         "\n" +
-        "ASSISTENTE DE CT-e\n" +
+        "ASSISTENTES DE CT-e E MDF-e\n" +
         "  Ctrl+→ / Ctrl+←\tAvançar / voltar etapa\n" +
         "  Ctrl+S\tSalvar rascunho\n" +
         "  Ctrl+Enter\tConcluir (última etapa)\n" +
