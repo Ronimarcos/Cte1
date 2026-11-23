@@ -13,6 +13,7 @@ public partial class FormEdicaoMotorista : Form
     internal FormEdicaoMotorista(MotoristaPrototipo motorista, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _motorista = motorista;
         Text = novo ? "Novo motorista" : "Editar motorista";
         CarregarCampos();

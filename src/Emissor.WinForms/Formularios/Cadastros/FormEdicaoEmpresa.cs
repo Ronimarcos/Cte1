@@ -15,6 +15,7 @@ public partial class FormEdicaoEmpresa : Form
     internal FormEdicaoEmpresa(EmpresaPrototipo empresa, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _empresa = empresa;
         _homologacaoOriginal = empresa.Homologacao;
         Text = novo ? "Nova empresa" : "Editar empresa";

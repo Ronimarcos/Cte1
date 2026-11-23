@@ -14,6 +14,7 @@ public partial class FormEdicaoProprietarioVeiculo : Form
     internal FormEdicaoProprietarioVeiculo(ProprietarioVeiculoPrototipo proprietario, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _proprietario = proprietario;
         Text = novo ? "Novo proprietário de veículo" : "Editar proprietário de veículo";
         cboTipoProprietario.Carregar(OpcoesCadastro.TiposProprietario);

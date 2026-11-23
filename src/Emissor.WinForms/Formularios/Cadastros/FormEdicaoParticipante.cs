@@ -14,6 +14,7 @@ public partial class FormEdicaoParticipante : Form
     internal FormEdicaoParticipante(ParticipantePrototipo participante, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _participante = participante;
         Text = novo ? "Novo participante" : "Editar participante";
         cboIndicadorIe.Carregar(OpcoesCadastro.IndicadoresIe);

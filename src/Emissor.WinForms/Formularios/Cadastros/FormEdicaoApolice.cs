@@ -17,6 +17,7 @@ public partial class FormEdicaoApolice : Form
     internal FormEdicaoApolice(ApolicePrototipo apolice, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _apolice = apolice;
         Text = novo ? "Nova apólice de seguro" : "Editar apólice de seguro";
         cboResponsavel.Carregar(OpcoesCadastro.ResponsaveisSeguro);

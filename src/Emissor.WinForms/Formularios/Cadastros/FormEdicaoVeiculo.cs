@@ -18,6 +18,7 @@ public partial class FormEdicaoVeiculo : Form
     internal FormEdicaoVeiculo(VeiculoPrototipo veiculo, IEnumerable<Opcao<int>> proprietarios, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _veiculo = veiculo;
         Text = novo ? "Novo veículo" : "Editar veículo";
         cboTipo.Carregar(OpcoesCadastro.TiposVeiculo);

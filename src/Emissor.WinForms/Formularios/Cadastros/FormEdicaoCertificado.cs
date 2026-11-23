@@ -20,6 +20,7 @@ public partial class FormEdicaoCertificado : Form
     internal FormEdicaoCertificado(CertificadoPrototipo certificado, bool novo)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _certificado = certificado;
         _novo = novo;
         _arquivoOriginal = certificado.CaminhoArquivo;

@@ -45,6 +45,8 @@ public partial class FormPrincipal : Form
             [mnuCteConsultar] = AbrirConsultaCte,
         };
 
+        ConfigurarAtalhosMenu();
+
         AtualizarEmpresaAtiva();
     }
 
@@ -86,6 +88,37 @@ public partial class FormPrincipal : Form
 
         var tela = new FormListaCadastro(fonte) { MdiParent = this };
         tela.Show();
+    }
+
+    /// <summary>
+    /// Atalhos diretos dos menus (aparecem ao lado de cada item). Definidos aqui, e não no Designer,
+    /// para manter o <c>FormPrincipal.Designer.cs</c> como foi validado. A lista completa está em <see cref="AtalhosTeclado"/>.
+    /// </summary>
+    private void ConfigurarAtalhosMenu()
+    {
+        mnuCteEmitir.ShortcutKeys = Keys.Control | Keys.T;
+        mnuCteConsultar.ShortcutKeys = Keys.Control | Keys.Shift | Keys.T;
+        mnuMdfeEmitir.ShortcutKeys = Keys.Control | Keys.M;
+        mnuMdfeConsultar.ShortcutKeys = Keys.Control | Keys.Shift | Keys.M;
+        mnuCadastrosParticipantes.ShortcutKeys = Keys.Control | Keys.Shift | Keys.P;
+        mnuCadastrosVeiculos.ShortcutKeys = Keys.Control | Keys.Shift | Keys.V;
+        mnuCadastrosMotoristas.ShortcutKeys = Keys.Control | Keys.Shift | Keys.O;
+        mnuSistemaTrocarEmpresa.ShortcutKeys = Keys.Control | Keys.Shift | Keys.E;
+
+        // Alt+F4 já é tratado pelo Windows; aqui só aparece no menu.
+        mnuSistemaSair.ShortcutKeyDisplayString = "Alt+F4";
+    }
+
+    /// <summary>F1 mostra a lista de atalhos, também quando o foco está numa janela interna (MDI).</summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.F1)
+        {
+            AtalhosTeclado.MostrarAjuda(this);
+            return true;
+        }
+
+        return base.ProcessCmdKey(ref msg, keyData);
     }
 
     /// <summary>Abre o assistente de emissão para um CT-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>

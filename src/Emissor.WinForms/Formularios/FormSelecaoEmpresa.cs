@@ -17,6 +17,7 @@ public partial class FormSelecaoEmpresa : Form
     public FormSelecaoEmpresa(IReadOnlyList<EmpresaPrototipo> empresas, EmpresaPrototipo? empresaAtual = null)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, salvar: null);
         _empresaAtual = empresaAtual;
         dgvEmpresas.AutoGenerateColumns = false;
         dgvEmpresas.DataSource = empresas.ToList();

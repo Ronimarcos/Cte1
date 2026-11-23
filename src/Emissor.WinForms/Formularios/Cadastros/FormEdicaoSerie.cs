@@ -20,6 +20,7 @@ public partial class FormEdicaoSerie : Form
     internal FormEdicaoSerie(SeriePrototipo serie, bool novo, Func<SeriePrototipo, bool> existeDuplicada)
     {
         InitializeComponent();
+        AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _serie = serie;
         _existeDuplicada = existeDuplicada;
         Text = novo ? "Nova série de documento" : "Editar série de documento";

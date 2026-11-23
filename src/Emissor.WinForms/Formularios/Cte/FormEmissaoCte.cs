@@ -39,6 +39,60 @@ public partial class FormEmissaoCte : Form
         IrPara(0);
     }
 
+    /// <summary>
+    /// Atalhos do assistente: Ctrl+→/Ctrl+← avançam/voltam, Ctrl+S salva o rascunho,
+    /// Ctrl+Enter conclui (só na última etapa), Esc cancela (com confirmação) e F1 mostra a ajuda.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.Control | Keys.Right when btnAvancar.Visible:
+                Avancar();
+                return true;
+            case Keys.Control | Keys.Left when btnVoltar.Enabled:
+                Voltar();
+                return true;
+            case Keys.Control | Keys.S:
+                SalvarRascunho();
+                return true;
+            case Keys.Control | Keys.Enter when btnConcluir.Visible:
+                Concluir();
+                return true;
+            case Keys.Escape when !EscPertenceAoControle():
+                Close();
+                return true;
+            case Keys.F1:
+                AtalhosTeclado.MostrarAjuda(this);
+                return true;
+            default:
+                return base.ProcessCmdKey(ref msg, keyData);
+        }
+    }
+
+    /// <summary>
+    /// Esc deve primeiro desfazer a edição de uma célula da grade ou fechar uma lista aberta,
+    /// e só depois cancelar o assistente.
+    /// </summary>
+    private bool EscPertenceAoControle()
+    {
+        Control? atual = ActiveControl;
+        while (atual is ContainerControl { ActiveControl: { } interno })
+        {
+            atual = interno;
+        }
+
+        for (var controle = atual; controle is not null; controle = controle.Parent)
+        {
+            if (controle is DataGridView { IsCurrentCellInEditMode: true } or ComboBox { DroppedDown: true })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void btnAvancar_Click(object? sender, EventArgs e) => Avancar();
 
     private void btnVoltar_Click(object? sender, EventArgs e) => Voltar();

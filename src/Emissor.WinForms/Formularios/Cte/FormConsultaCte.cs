@@ -70,6 +70,31 @@ public partial class FormConsultaCte : Form
         AtualizarBotoes();
     }
 
+    /// <summary>
+    /// Atalhos da consulta: Insert/F2 = Novo, Ctrl+F/F3 = pesquisa, Esc = fechar.
+    /// Enter e Delete são tratados na própria grade.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.Insert:
+            case Keys.F2:
+                Novo();
+                return true;
+            case Keys.Control | Keys.F:
+            case Keys.F3:
+                txtPesquisa.Focus();
+                txtPesquisa.SelectAll();
+                return true;
+            case Keys.Escape:
+                Close();
+                return true;
+            default:
+                return base.ProcessCmdKey(ref msg, keyData);
+        }
+    }
+
     private void Filtro_Alterado(object? sender, EventArgs e) => Recarregar();
 
     private void btnNovo_Click(object? sender, EventArgs e) => Novo();
