@@ -18,8 +18,21 @@ public abstract class RegistroPrototipo
     /// <summary>Data e hora da última alteração.</summary>
     public DateTime AlteradoEm { get; set; }
 
-    /// <summary>Cria uma cópia rasa do registro, usada para editar sem afetar a lista até o usuário salvar.</summary>
-    public RegistroPrototipo Clonar() => (RegistroPrototipo)MemberwiseClone();
+    /// <summary>Cria uma cópia do registro, usada para editar sem afetar a lista até o usuário salvar.</summary>
+    public RegistroPrototipo Clonar()
+    {
+        var copia = (RegistroPrototipo)MemberwiseClone();
+        copia.CopiarColecoes();
+        return copia;
+    }
+
+    /// <summary>
+    /// Chamado na cópia logo após o <see cref="Clonar"/>: registros com listas devem substituí-las por cópias,
+    /// senão a cópia e o original compartilham as mesmas listas.
+    /// </summary>
+    protected virtual void CopiarColecoes()
+    {
+    }
 
     /// <summary>Lista os campos obrigatórios não preenchidos; vazia quando o registro pode ser salvo.</summary>
     public abstract IReadOnlyList<string> ValidarObrigatorios();

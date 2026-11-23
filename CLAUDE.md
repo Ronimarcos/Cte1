@@ -79,5 +79,5 @@ Preferências do responsável pelo projeto:
   - [x] Principal com seleção de empresa (MDI).
   - [x] Cadastros, fatia 1: Empresa, Participante, Veículo, Proprietário (`Formularios/Cadastros`, lista genérica + diálogo de edição).
   - [x] Cadastros, fatia 2: Certificados, Séries, Motoristas, Apólices.
-  - [ ] Emissão de CT-e.
+  - [x] Emissão de CT-e (`Formularios/Cte`: assistente em 5 etapas + consulta).
   - [ ] Emissão de MDF-e.

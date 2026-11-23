@@ -180,6 +180,55 @@ internal static class DadosFicticios
         },
     ]);
 
+    /// <summary>
+    /// CT-e da empresa 1 para a consulta. Os participantes e a série são os da lista acima, pelo <c>Id</c> gerado
+    /// na ordem de inclusão. As chaves são fictícias (dígito verificador não calculado).
+    /// </summary>
+    public static RepositorioMemoria<CtePrototipo> Ctes { get; } = new(
+    [
+        new()
+        {
+            EmpresaId = 1, Situacao = SituacaoCte.ProntoParaTransmitir, Tipo = TipoCte.Normal, TipoServico = TipoServicoCte.Normal,
+            SerieId = 1, Cfop = "6352", NaturezaOperacao = "PRESTACAO DE SERVICO DE TRANSPORTE",
+            DataEmissao = DateTime.Today.AddDays(-2), RemetenteId = 1, DestinatarioId = 2, Tomador = TomadorServico.Remetente,
+            MunicipioInicioCodigo = 5107925, MunicipioFimCodigo = 3550308,
+            ValorCarga = 150_000m, ProdutoPredominante = "SOJA EM GRAOS",
+            Quantidades = [new() { Unidade = UnidadeMedidaCarga.Quilograma, TipoMedida = "PESO BRUTO", Quantidade = 32_000m }],
+            DocumentosNfe = [new() { Chave = ChaveFicticia(55, "44444444000144", 1501) }],
+            Componentes = [new() { Nome = "FRETE PESO", Valor = 8_500m }, new() { Nome = "PEDAGIO", Valor = 320m }],
+            ValorReceber = 8_820m,
+        },
+        new()
+        {
+            EmpresaId = 1, Situacao = SituacaoCte.EmDigitacao, Tipo = TipoCte.Normal, TipoServico = TipoServicoCte.Subcontratacao,
+            SerieId = 1, Cfop = "5352", NaturezaOperacao = "PRESTACAO DE SERVICO DE TRANSPORTE",
+            DataEmissao = DateTime.Today.AddDays(-1), RemetenteId = 2, DestinatarioId = 3, Tomador = TomadorServico.Destinatario,
+            MunicipioInicioCodigo = 5103403, MunicipioFimCodigo = 5108402,
+            ValorCarga = 12_000m, ProdutoPredominante = "ALIMENTOS",
+            Quantidades = [new() { Unidade = UnidadeMedidaCarga.Quilograma, TipoMedida = "PESO BRUTO", Quantidade = 1_800m }],
+            DocumentosNfe = [new() { Chave = ChaveFicticia(55, "55555555000155", 9020) }],
+            Componentes = [new() { Nome = "FRETE VALOR", Valor = 450m }],
+            ValorReceber = 450m,
+        },
+        new()
+        {
+            EmpresaId = 1, Situacao = SituacaoCte.ProntoParaTransmitir, Tipo = TipoCte.Complemento, TipoServico = TipoServicoCte.Normal,
+            SerieId = 1, Cfop = "6352", NaturezaOperacao = "COMPLEMENTO DE FRETE",
+            DataEmissao = DateTime.Today, RemetenteId = 1, DestinatarioId = 2, Tomador = TomadorServico.Remetente,
+            MunicipioInicioCodigo = 5107925, MunicipioFimCodigo = 3550308,
+            ChaveCteComplementado = ChaveFicticia(57, "11111111000111", 14),
+            Componentes = [new() { Nome = "DIF. FRETE", Valor = 380m }],
+            ValorReceber = 380m,
+        },
+    ]);
+
+    /// <summary>Monta uma chave de acesso fictícia de 44 dígitos (MT, mês atual, série 1), sem dígito verificador real.</summary>
+    /// <param name="modelo">55 para NF-e, 57 para CT-e.</param>
+    /// <param name="cnpj">CNPJ do emitente, só dígitos.</param>
+    /// <param name="numero">Número do documento.</param>
+    private static string ChaveFicticia(int modelo, string cnpj, int numero) =>
+        $"51{DateTime.Today:yyMM}{cnpj}{modelo:00}001{numero:000000000}1{numero:00000000}0";
+
     /// <summary>Procura o município pelo código IBGE.</summary>
     /// <param name="codigo">Código IBGE, ou <c>null</c>.</param>
     public static MunicipioPrototipo? ObterMunicipio(int? codigo) =>

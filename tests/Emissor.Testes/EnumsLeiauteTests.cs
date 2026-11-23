@@ -62,6 +62,36 @@ public class EnumsLeiauteTests
     [InlineData(ResponsavelSeguro.Contratante, 2)]
     public void ResponsavelSeguro_TemCodigosDoLeiaute(ResponsavelSeguro valor, int codigo) => Assert.Equal(codigo, (int)valor);
 
+    [Theory]
+    [InlineData(TipoCte.Normal, 0)]
+    [InlineData(TipoCte.Complemento, 1)]
+    [InlineData(TipoCte.Substituicao, 3)]
+    public void TipoCte_TemCodigosDoLeiaute(TipoCte valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(TipoServicoCte.Normal, 0)]
+    [InlineData(TipoServicoCte.Subcontratacao, 1)]
+    [InlineData(TipoServicoCte.Redespacho, 2)]
+    [InlineData(TipoServicoCte.RedespachoIntermediario, 3)]
+    public void TipoServicoCte_TemCodigosDoLeiaute(TipoServicoCte valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(TomadorServico.Remetente, 0)]
+    [InlineData(TomadorServico.Expedidor, 1)]
+    [InlineData(TomadorServico.Recebedor, 2)]
+    [InlineData(TomadorServico.Destinatario, 3)]
+    [InlineData(TomadorServico.Outros, 4)]
+    public void TomadorServico_TemCodigosDoLeiaute(TomadorServico valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
+    [Theory]
+    [InlineData(UnidadeMedidaCarga.MetroCubico, 0)]
+    [InlineData(UnidadeMedidaCarga.Quilograma, 1)]
+    [InlineData(UnidadeMedidaCarga.Tonelada, 2)]
+    [InlineData(UnidadeMedidaCarga.Unidade, 3)]
+    [InlineData(UnidadeMedidaCarga.Litros, 4)]
+    [InlineData(UnidadeMedidaCarga.Mmbtu, 5)]
+    public void UnidadeMedidaCarga_TemCodigosDoLeiaute(UnidadeMedidaCarga valor, int codigo) => Assert.Equal(codigo, (int)valor);
+
     [Fact]
     public void Enums_NaoTemValoresAlemDoLeiaute()
     {
@@ -73,5 +103,9 @@ public class EnumsLeiauteTests
         Assert.Equal(3, Enum.GetValues<TipoProprietario>().Length);
         Assert.Equal(2, Enum.GetValues<ModeloDocumento>().Length);
         Assert.Equal(2, Enum.GetValues<ResponsavelSeguro>().Length);
+        Assert.Equal(3, Enum.GetValues<TipoCte>().Length);
+        Assert.Equal(4, Enum.GetValues<TipoServicoCte>().Length);
+        Assert.Equal(5, Enum.GetValues<TomadorServico>().Length);
+        Assert.Equal(6, Enum.GetValues<UnidadeMedidaCarga>().Length);
     }
 }

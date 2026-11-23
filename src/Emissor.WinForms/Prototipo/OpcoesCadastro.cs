@@ -115,6 +115,44 @@ public static class OpcoesCadastro
         new(ResponsavelSeguro.Contratante, "2 - Contratante do transporte"),
     ];
 
+    /// <summary>Tipo do CT-e.</summary>
+    public static IReadOnlyList<Opcao<TipoCte>> TiposCte { get; } =
+    [
+        new(TipoCte.Normal, "0 - Normal"),
+        new(TipoCte.Complemento, "1 - Complemento de valores"),
+        new(TipoCte.Substituicao, "3 - Substituição"),
+    ];
+
+    /// <summary>Tipo do serviço do CT-e.</summary>
+    public static IReadOnlyList<Opcao<TipoServicoCte>> TiposServicoCte { get; } =
+    [
+        new(TipoServicoCte.Normal, "0 - Normal"),
+        new(TipoServicoCte.Subcontratacao, "1 - Subcontratação"),
+        new(TipoServicoCte.Redespacho, "2 - Redespacho"),
+        new(TipoServicoCte.RedespachoIntermediario, "3 - Redespacho intermediário"),
+    ];
+
+    /// <summary>Tomador do serviço.</summary>
+    public static IReadOnlyList<Opcao<TomadorServico>> Tomadores { get; } =
+    [
+        new(TomadorServico.Remetente, "0 - Remetente"),
+        new(TomadorServico.Expedidor, "1 - Expedidor"),
+        new(TomadorServico.Recebedor, "2 - Recebedor"),
+        new(TomadorServico.Destinatario, "3 - Destinatário"),
+        new(TomadorServico.Outros, "4 - Outros"),
+    ];
+
+    /// <summary>Unidade de medida da quantidade de carga.</summary>
+    public static IReadOnlyList<Opcao<UnidadeMedidaCarga>> UnidadesMedidaCarga { get; } =
+    [
+        new(UnidadeMedidaCarga.MetroCubico, "00 - M3"),
+        new(UnidadeMedidaCarga.Quilograma, "01 - KG"),
+        new(UnidadeMedidaCarga.Tonelada, "02 - TON"),
+        new(UnidadeMedidaCarga.Unidade, "03 - UNIDADE"),
+        new(UnidadeMedidaCarga.Litros, "04 - LITROS"),
+        new(UnidadeMedidaCarga.Mmbtu, "05 - MMBTU"),
+    ];
+
     /// <summary>Texto de exibição de um valor, ou vazio quando não informado.</summary>
     /// <typeparam name="T">Tipo do valor.</typeparam>
     /// <param name="opcoes">Lista de opções.</param>

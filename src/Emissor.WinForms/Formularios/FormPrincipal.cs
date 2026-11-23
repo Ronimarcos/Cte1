@@ -1,4 +1,5 @@
 using Emissor.WinForms.Formularios.Cadastros;
+using Emissor.WinForms.Formularios.Cte;
 using Emissor.WinForms.Prototipo;
 
 namespace Emissor.WinForms.Formularios;
@@ -12,6 +13,9 @@ public partial class FormPrincipal : Form
 
     /// <summary>Opções de menu que já têm tela de cadastro; as demais abrem a tela provisória.</summary>
     private readonly Dictionary<ToolStripItem, Func<IFonteCadastro>> _cadastros;
+
+    /// <summary>Opções de menu que abrem telas próprias (fora do padrão de cadastro).</summary>
+    private readonly Dictionary<ToolStripItem, Action> _telas;
 
     private EmpresaPrototipo _empresaAtiva;
 
@@ -35,6 +39,12 @@ public partial class FormPrincipal : Form
             [mnuCadastrosApolices] = () => new FonteApolices(_empresaAtiva.Id),
         };
 
+        _telas = new()
+        {
+            [mnuCteEmitir] = EmitirCte,
+            [mnuCteConsultar] = AbrirConsultaCte,
+        };
+
         AtualizarEmpresaAtiva();
     }
 
@@ -55,6 +65,12 @@ public partial class FormPrincipal : Form
             return;
         }
 
+        if (_telas.TryGetValue(item, out var abrirTela))
+        {
+            abrirTela();
+            return;
+        }
+
         AbrirTelaEmConstrucao(item.Tag as string ?? item.Text?.Replace("&", string.Empty) ?? string.Empty);
     }
 
@@ -69,6 +85,31 @@ public partial class FormPrincipal : Form
         }
 
         var tela = new FormListaCadastro(fonte) { MdiParent = this };
+        tela.Show();
+    }
+
+    /// <summary>Abre o assistente de emissão para um CT-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
+    private void EmitirCte()
+    {
+        var cte = new CtePrototipo { EmpresaId = _empresaAtiva.Id };
+        using var tela = new FormEmissaoCte(cte, _empresaAtiva);
+        if (tela.ShowDialog(this) == DialogResult.OK)
+        {
+            MdiChildren.OfType<FormConsultaCte>().FirstOrDefault()?.Recarregar(cte.Id);
+        }
+    }
+
+    /// <summary>Abre a consulta de CT-e ou, se já estiver aberta, apenas a traz para frente.</summary>
+    private void AbrirConsultaCte()
+    {
+        var telaAberta = MdiChildren.OfType<FormConsultaCte>().FirstOrDefault();
+        if (telaAberta is not null)
+        {
+            telaAberta.Activate();
+            return;
+        }
+
+        var tela = new FormConsultaCte(_empresaAtiva) { MdiParent = this };
         tela.Show();
     }
 
