@@ -20,6 +20,7 @@ public partial class FormSelecaoEmpresa : Form
         _empresaAtual = empresaAtual;
         dgvEmpresas.AutoGenerateColumns = false;
         dgvEmpresas.DataSource = empresas.ToList();
+        dgvEmpresas.KeyDown += dgvEmpresas_KeyDown;
     }
 
     /// <summary>Empresa escolhida; preenchida somente quando o diálogo retorna <see cref="DialogResult.OK"/>.</summary>
@@ -36,6 +37,20 @@ public partial class FormSelecaoEmpresa : Form
         // Duplo clique no cabeçalho (RowIndex -1) não seleciona.
         if (e.RowIndex >= 0)
         {
+            ConfirmarSelecao();
+        }
+    }
+
+    /// <summary>
+    /// Enter confirma a empresa da linha atual. Sem isso a grade trata o Enter como "descer uma linha"
+    /// e o diálogo confirmava a empresa seguinte à escolhida.
+    /// </summary>
+    private void dgvEmpresas_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Enter)
+        {
+            e.Handled = true;
+            e.SuppressKeyPress = true;
             ConfirmarSelecao();
         }
     }
