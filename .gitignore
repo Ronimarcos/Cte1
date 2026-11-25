@@ -38,6 +38,8 @@ artifacts/
 *.key
 *.pem
 certificados/
+# Exceção: código-fonte de leitura/assinatura (os *.pfx etc. continuam ignorados pelas regras acima).
+!src/Emissor.DFe/Certificados/
 appsettings.*.local.json
 *.secrets.json
 
