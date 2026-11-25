@@ -1,6 +1,7 @@
 using Emissor.Dados;
 using Emissor.DFe.Certificados;
 using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios;
 using Emissor.WinForms.Formularios.Acesso;
@@ -54,7 +55,7 @@ static class Program
                 return;
             }
 
-            var empresa = EscolherEmpresa(empresas);
+            var empresa = EscolherEmpresa(empresas, provedor.GetRequiredService<ServicoAuditoria>());
             if (empresa is null)
             {
                 return;
@@ -67,6 +68,12 @@ static class Program
                 return;
             }
 
+            var auditoria = provedor.GetRequiredService<ServicoAuditoria>();
+            FormAguarde.Executar("Encerrando a sessão...", async () =>
+            {
+                await auditoria.RegistrarAsync(AcaoAuditoria.TrocaUsuario, principal.EmpresaAtivaId, "Saída para troca de usuário");
+                return (object)true;
+            });
             acesso.Sair();
         }
     }
@@ -131,6 +138,7 @@ static class Program
         servicos.AddDbContextFactory<EmissorDbContext>(opcoes => opcoes.UseSqlite($"Data Source={caminhoBanco}"));
         servicos.AddSingleton<Sessao>();
         servicos.AddSingleton<ServicoAcesso>();
+        servicos.AddSingleton<ServicoAuditoria>();
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
         servicos.AddSingleton(typeof(ServicoCadastro<>));
@@ -207,7 +215,7 @@ static class Program
     }
 
     /// <summary>Mostra a seleção de empresa e devolve a escolhida, lida do banco; <c>null</c> se o usuário desistir.</summary>
-    private static Empresa? EscolherEmpresa(ServicoEmpresas empresas)
+    private static Empresa? EscolherEmpresa(ServicoEmpresas empresas, ServicoAuditoria auditoria)
     {
         var lista = FormAguarde.Executar("Lendo as empresas...", async () => await empresas.ListarResumosAsync());
         if (lista is null)
@@ -234,6 +242,10 @@ static class Program
         }
 
         return FormAguarde.Executar("Abrindo a empresa...", async () =>
-            await empresas.ObterAsync(escolhida.Value) ?? throw new InvalidOperationException("A empresa escolhida não existe mais."));
+        {
+            var empresa = await empresas.ObterAsync(escolhida.Value) ?? throw new InvalidOperationException("A empresa escolhida não existe mais.");
+            await auditoria.RegistrarAsync(AcaoAuditoria.EntradaEmpresa, empresa.Id, $"Entrada na empresa {empresa.RazaoSocial}");
+            return empresa;
+        });
     }
 }

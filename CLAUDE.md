@@ -100,5 +100,5 @@ Preferências do responsável pelo projeto:
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).
 - [ ] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
-  - [ ] A2: auditoria.
+  - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).
   - [ ] A3: proteção local (banco no perfil do usuário, DPAPI do usuário).

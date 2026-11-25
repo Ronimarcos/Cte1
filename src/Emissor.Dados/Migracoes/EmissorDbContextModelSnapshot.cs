@@ -608,6 +608,53 @@ namespace Emissor.Dados.Migracoes
                     b.ToTable("ProprietariosVeiculo", (string)null);
                 });
 
+            modelBuilder.Entity("Emissor.Dominio.Entidades.RegistroAuditoria", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Acao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("EmpresaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Entidade")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("RegistroId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("UsuarioLogin")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataHora");
+
+                    b.HasIndex("EmpresaId", "DataHora");
+
+                    b.HasIndex("UsuarioId", "DataHora");
+
+                    b.ToTable("Auditoria", (string)null);
+                });
+
             modelBuilder.Entity("Emissor.Dominio.Entidades.SerieDocumento", b =>
                 {
                     b.Property<int>("Id")

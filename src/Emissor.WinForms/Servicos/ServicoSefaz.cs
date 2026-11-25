@@ -49,7 +49,7 @@ public sealed class ServicoSefaz
             ?? throw new RegraNegocioException("A empresa não tem município cadastrado (a UF define o autorizador do CT-e).");
         var certificado = await ServicoXmlTeste.CertificadoValidoAsync(_servicos, empresa);
 
-        return await Task.Run(async () =>
+        var resultados = await Task.Run(async () =>
         {
             using var x509 = ProvedoresCertificado.Criar(certificado, _servicos.Protetor).ObterCertificado();
             using var cliente = ClienteHttpSefaz.Criar(x509, TimeSpan.FromSeconds(30));
@@ -59,6 +59,9 @@ public sealed class ServicoSefaz
                 await Consultar("MDF-e", () => ServicoStatus.ConsultarMdfeAsync(cliente, municipio.Uf, TipoAmbiente.Homologacao)),
             ];
         });
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.ConsultaSefaz, empresa.Id,
+            "Status da SEFAZ (homologação): " + string.Join("; ", resultados.Select(r => r.Status is { } s ? $"{r.Documento} {s.Codigo}" : $"{r.Documento} sem resposta")));
+        return resultados;
     }
 
     private static async Task<ResultadoStatusSefaz> Consultar(string documento, Func<Task<StatusServico>> consulta)
