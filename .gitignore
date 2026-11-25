@@ -60,3 +60,6 @@ damdfe/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# ===== Documentação oficial baixada (MOC em PDF): consulta local, fora do repositório =====
+docs/moc/
