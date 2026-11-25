@@ -646,6 +646,59 @@ namespace Emissor.Dados.Migracoes
                     b.ToTable("Series", (string)null);
                 });
 
+            modelBuilder.Entity("Emissor.Dominio.Entidades.Usuario", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AlteradoEm")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("BloqueadoAte")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DeveTrocarSenha")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Login")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Perfil")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SenhaHash")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TentativasFalhas")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UltimoAcesso")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Login")
+                        .IsUnique();
+
+                    b.ToTable("Usuarios", (string)null);
+                });
+
             modelBuilder.Entity("Emissor.Dominio.Entidades.Veiculo", b =>
                 {
                     b.Property<int>("Id")
@@ -1185,6 +1238,42 @@ namespace Emissor.Dados.Migracoes
                         .HasForeignKey("EmpresaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Emissor.Dominio.Entidades.Usuario", b =>
+                {
+                    b.OwnsMany("Emissor.Dominio.Entidades.UsuarioEmpresa", "Empresas", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("EmpresaId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("UsuarioId")
+                                .HasColumnType("INTEGER");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("EmpresaId");
+
+                            b1.HasIndex("UsuarioId", "EmpresaId")
+                                .IsUnique();
+
+                            b1.ToTable("UsuarioEmpresas", (string)null);
+
+                            b1.HasOne("Emissor.Dominio.Entidades.Empresa", null)
+                                .WithMany()
+                                .HasForeignKey("EmpresaId")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired();
+
+                            b1.WithOwner()
+                                .HasForeignKey("UsuarioId");
+                        });
+
+                    b.Navigation("Empresas");
                 });
 
             modelBuilder.Entity("Emissor.Dominio.Entidades.Veiculo", b =>

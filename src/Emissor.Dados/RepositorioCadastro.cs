@@ -10,6 +10,11 @@ namespace Emissor.Dados;
 /// Repositório assíncrono dos cadastros. Valida o registro com as regras do domínio antes de gravar e traduz
 /// as recusas do banco (registro repetido, registro em uso) em <see cref="RegraNegocioException"/> com mensagem
 /// em português para a tela.
+/// <para>
+/// Aplica a alçada do usuário (<see cref="IContextoAcesso"/>): o operador só lista, abre, grava e exclui registros das
+/// empresas liberadas para ele; registro de outra empresa se comporta como inexistente. Empresas, certificados e
+/// usuários só são gravados pelo administrador.
+/// </para>
 /// </summary>
 /// <typeparam name="T">Entidade de cadastro.</typeparam>
 public class RepositorioCadastro<T> where T : EntidadeBase
@@ -19,19 +24,34 @@ public class RepositorioCadastro<T> where T : EntidadeBase
 
     private readonly EmissorDbContext _contexto;
 
-    /// <summary>Cria o repositório sobre o contexto informado.</summary>
+    /// <summary>Cria o repositório com acesso total, para uso interno do sistema (preparação do banco, testes).</summary>
     /// <param name="contexto">Contexto do EF Core.</param>
-    public RepositorioCadastro(EmissorDbContext contexto) => _contexto = contexto;
+    public RepositorioCadastro(EmissorDbContext contexto)
+        : this(contexto, ContextoAcesso.Sistema)
+    {
+    }
+
+    /// <summary>Cria o repositório aplicando a alçada do usuário.</summary>
+    /// <param name="contexto">Contexto do EF Core.</param>
+    /// <param name="acesso">Quem acessa e em quais empresas.</param>
+    public RepositorioCadastro(EmissorDbContext contexto, IContextoAcesso acesso)
+    {
+        _contexto = contexto;
+        Acesso = acesso;
+    }
 
     /// <summary>Contexto do EF Core, para os repositórios derivados.</summary>
     protected EmissorDbContext Contexto => _contexto;
+
+    /// <summary>Alçada aplicada.</summary>
+    protected IContextoAcesso Acesso { get; }
 
     /// <summary>Lista os registros que atendem ao filtro, sem rastreamento (só leitura).</summary>
     /// <param name="filtro">Condição opcional.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
     public async Task<IReadOnlyList<T>> ListarAsync(Expression<Func<T, bool>>? filtro = null, CancellationToken cancelamento = default)
     {
-        IQueryable<T> consulta = _contexto.Set<T>().AsNoTracking();
+        var consulta = Consulta().AsNoTracking();
         if (filtro is not null)
         {
             consulta = consulta.Where(filtro);
@@ -40,24 +60,25 @@ public class RepositorioCadastro<T> where T : EntidadeBase
         return await consulta.OrderBy(e => e.Id).ToListAsync(cancelamento);
     }
 
-    /// <summary>Obtém uma cópia do registro para edição, ou <c>null</c> se não existir.</summary>
+    /// <summary>Obtém uma cópia do registro para edição, ou <c>null</c> se não existir ou estiver fora da alçada.</summary>
     /// <param name="id">Identificador.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
     public Task<T?> ObterAsync(int id, CancellationToken cancelamento = default) =>
-        _contexto.Set<T>().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancelamento);
+        Consulta().AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancelamento);
 
-    /// <summary>Indica se algum registro atende à condição.</summary>
+    /// <summary>Indica se algum registro, dentro da alçada, atende à condição.</summary>
     /// <param name="condicao">Condição.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
     public Task<bool> ExisteAsync(Expression<Func<T, bool>> condicao, CancellationToken cancelamento = default) =>
-        _contexto.Set<T>().AnyAsync(condicao, cancelamento);
+        Consulta().AnyAsync(condicao, cancelamento);
 
     /// <summary>Valida e inclui o registro; o <c>Id</c> é preenchido pelo banco.</summary>
     /// <param name="registro">Registro novo.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
-    /// <exception cref="RegraNegocioException">Pendências de validação ou registro repetido.</exception>
+    /// <exception cref="RegraNegocioException">Fora da alçada, pendências de validação ou registro repetido.</exception>
     public async Task IncluirAsync(T registro, CancellationToken cancelamento = default)
     {
+        GarantirEscrita(registro);
         Validar(registro);
         _contexto.Set<T>().Add(registro);
         await GravarAsync(cancelamento, "incluir");
@@ -66,11 +87,12 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     /// <summary>Valida e altera o registro de mesmo <c>Id</c>, preservando a data de inclusão.</summary>
     /// <param name="registro">Registro editado.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
-    /// <exception cref="RegraNegocioException">Pendências de validação, registro repetido ou inexistente.</exception>
+    /// <exception cref="RegraNegocioException">Fora da alçada, pendências de validação, registro repetido ou inexistente.</exception>
     public virtual async Task AlterarAsync(T registro, CancellationToken cancelamento = default)
     {
+        GarantirEscrita(registro);
         Validar(registro);
-        if (!await _contexto.Set<T>().AnyAsync(e => e.Id == registro.Id, cancelamento))
+        if (!await Consulta().AnyAsync(e => e.Id == registro.Id, cancelamento))
         {
             throw new RegraNegocioException("O registro não existe mais. Atualize a lista.");
         }
@@ -82,17 +104,68 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     /// <summary>Exclui o registro; recusa se ele estiver em uso por outros cadastros.</summary>
     /// <param name="id">Identificador.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
-    /// <exception cref="RegraNegocioException">Registro em uso.</exception>
+    /// <exception cref="RegraNegocioException">Fora da alçada ou registro em uso.</exception>
     public virtual async Task ExcluirAsync(int id, CancellationToken cancelamento = default)
     {
-        var registro = await _contexto.Set<T>().FirstOrDefaultAsync(e => e.Id == id, cancelamento);
+        var registro = await Consulta().FirstOrDefaultAsync(e => e.Id == id, cancelamento);
         if (registro is null)
         {
             return;
         }
 
+        GarantirEscrita(registro);
         _contexto.Set<T>().Remove(registro);
         await GravarAsync(cancelamento, "excluir");
+    }
+
+    /// <summary>
+    /// Consulta já restrita à alçada: com acesso total, tudo; senão, só registros das empresas liberadas (empresas:
+    /// pelo próprio código; cadastros e documentos: pela empresa dona); usuários, nada.
+    /// </summary>
+    protected IQueryable<T> Consulta()
+    {
+        IQueryable<T> consulta = _contexto.Set<T>();
+        if (Acesso.AcessoTotal)
+        {
+            return consulta;
+        }
+
+        var empresas = Acesso.Empresas.ToList();
+        if (typeof(T) == typeof(Empresa))
+        {
+            return consulta.Where(e => empresas.Contains(e.Id));
+        }
+
+        if (typeof(EntidadeDaEmpresa).IsAssignableFrom(typeof(T)))
+        {
+            return consulta.Where(e => empresas.Contains(EF.Property<int>(e, nameof(EntidadeDaEmpresa.EmpresaId))));
+        }
+
+        return consulta.Where(_ => false);
+    }
+
+    /// <summary>
+    /// Recusa a gravação fora da alçada: empresas, certificados e usuários só pelo administrador; cadastros e documentos
+    /// só de empresa liberada.
+    /// </summary>
+    /// <param name="registro">Registro a gravar ou excluir.</param>
+    /// <exception cref="RegraNegocioException">Fora da alçada.</exception>
+    protected void GarantirEscrita(T registro)
+    {
+        if (Acesso.AcessoTotal)
+        {
+            return;
+        }
+
+        if (registro is Empresa or CertificadoDigital or Usuario)
+        {
+            throw new RegraNegocioException("Somente o administrador pode cadastrar ou alterar empresas, certificados e usuários.");
+        }
+
+        if (registro is EntidadeDaEmpresa daEmpresa && !Acesso.PodeAcessar(daEmpresa.EmpresaId))
+        {
+            throw new RegraNegocioException("Você não tem acesso a esta empresa.");
+        }
     }
 
     /// <summary>Recusa o registro com pendências de validação.</summary>
@@ -123,7 +196,7 @@ public class RepositorioCadastro<T> where T : EntidadeBase
                 ? operacao == "excluir"
                     ? "O registro está em uso por outros cadastros ou documentos e não pode ser excluído."
                     : "O registro aponta para um cadastro que não existe mais (empresa, município, participante, veículo, série...)."
-                : "Já existe um registro com estes dados (documento, placa, série ou apólice repetidos).";
+                : "Já existe um registro com estes dados (documento, placa, série, apólice ou login repetidos).";
             throw new RegraNegocioException(mensagem);
         }
         finally

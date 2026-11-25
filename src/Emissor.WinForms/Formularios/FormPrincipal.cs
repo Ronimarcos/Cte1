@@ -1,6 +1,7 @@
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
+using Emissor.WinForms.Formularios.Acesso;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Formularios.Cte;
 using Emissor.WinForms.Formularios.Mdfe;
@@ -25,6 +26,7 @@ public partial class FormPrincipal : Form
     private readonly ServicoEmpresas _servicoEmpresas;
     private readonly ServicosCadastro _servicos;
     private readonly CatalogoMunicipios _municipios;
+    private readonly ServicoAcesso _acesso;
 
     /// <summary>Empresa ativa, como gravada no banco.</summary>
     private Empresa _empresa;
@@ -34,12 +36,14 @@ public partial class FormPrincipal : Form
     /// <param name="servicoEmpresas">Operações de empresa no banco.</param>
     /// <param name="servicos">Operações dos demais cadastros no banco.</param>
     /// <param name="municipios">Municípios do IBGE.</param>
-    public FormPrincipal(Empresa empresa, ServicoEmpresas servicoEmpresas, ServicosCadastro servicos, CatalogoMunicipios municipios)
+    /// <param name="acesso">Usuário logado, troca de senha e cadastro de usuários.</param>
+    public FormPrincipal(Empresa empresa, ServicoEmpresas servicoEmpresas, ServicosCadastro servicos, CatalogoMunicipios municipios, ServicoAcesso acesso)
     {
         InitializeComponent();
         _servicoEmpresas = servicoEmpresas;
         _servicos = servicos;
         _municipios = municipios;
+        _acesso = acesso;
         _empresa = empresa;
 
         // As funções leem _empresa na hora de abrir, então seguem a troca de empresa.
@@ -64,8 +68,46 @@ public partial class FormPrincipal : Form
         };
 
         ConfigurarAtalhosMenu();
-
+        AplicarPerfil();
         AtualizarEmpresaAtiva();
+    }
+
+    /// <summary>Verdadeiro quando o usuário pediu "Trocar usuário": o programa volta ao login ao fechar a janela.</summary>
+    public bool TrocarUsuarioSolicitado { get; private set; }
+
+    /// <summary>
+    /// Mostra o usuário logado e esconde do operador o que é só do administrador (empresas, certificados, usuários).
+    /// A alçada também é conferida na camada de dados; aqui é só para não oferecer o que ele não pode usar.
+    /// </summary>
+    private void AplicarPerfil()
+    {
+        var usuario = _acesso.Sessao.Usuario;
+        var administrador = _acesso.Sessao.AcessoTotal;
+        lblStatusUsuario.Text = usuario is null ? "Usuário:" : $"Usuário: {usuario.Nome} ({(administrador ? "administrador" : "operador")})";
+        mnuCadastrosEmpresas.Visible = administrador;
+        mnuCadastrosCertificados.Visible = administrador;
+        mnuSistemaUsuarios.Visible = administrador;
+    }
+
+    private void mnuSistemaUsuarios_Click(object? sender, EventArgs e) => AbrirCadastro(new FonteUsuarios(_acesso, _servicoEmpresas));
+
+    private void mnuSistemaTrocarSenha_Click(object? sender, EventArgs e)
+    {
+        using var tela = new FormTrocarSenha(_acesso, obrigatoria: false);
+        tela.ShowDialog(this);
+    }
+
+    private void mnuSistemaTrocarUsuario_Click(object? sender, EventArgs e)
+    {
+        TrocarUsuarioSolicitado = true;
+        Close();
+        if (!Visible)
+        {
+            return;
+        }
+
+        // Fechamento cancelado (ex.: assistente com dados não salvos): continua com o mesmo usuário.
+        TrocarUsuarioSolicitado = false;
     }
 
     /// <summary>

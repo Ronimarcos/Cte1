@@ -49,6 +49,9 @@ public class EmissorDbContext : DbContext
     /// <summary>MDF-e emitidos.</summary>
     public DbSet<ManifestoEletronico> Mdfes => Set<ManifestoEletronico>();
 
+    /// <summary>Usuários do emissor.</summary>
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+
     /// <inheritdoc />
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

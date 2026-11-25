@@ -1,6 +1,7 @@
 using Emissor.Dados;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Microsoft.EntityFrameworkCore;
 
 namespace Emissor.WinForms.Servicos;
@@ -13,10 +14,16 @@ namespace Emissor.WinForms.Servicos;
 public sealed class ServicoDocumentos<T> where T : DocumentoFiscal
 {
     private readonly IDbContextFactory<EmissorDbContext> _fabrica;
+    private readonly Sessao _sessao;
 
     /// <summary>Cria o serviço sobre a fábrica de contextos.</summary>
     /// <param name="fabrica">Fábrica de contextos do banco.</param>
-    public ServicoDocumentos(IDbContextFactory<EmissorDbContext> fabrica) => _fabrica = fabrica;
+    /// <param name="sessao">Usuário logado: o repositório só deixa ver e gravar as empresas da alçada dele.</param>
+    public ServicoDocumentos(IDbContextFactory<EmissorDbContext> fabrica, Sessao sessao)
+    {
+        _fabrica = fabrica;
+        _sessao = sessao;
+    }
 
     /// <summary>Documentos da empresa emitidos no período, com os itens, opcionalmente só de uma situação.</summary>
     /// <param name="empresaId">Empresa ativa.</param>
@@ -71,6 +78,6 @@ public sealed class ServicoDocumentos<T> where T : DocumentoFiscal
     private async Task<TResultado> ExecutarAsync<TResultado>(Func<RepositorioDocumento<T>, Task<TResultado>> operacao)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        return await operacao(new RepositorioDocumento<T>(contexto));
+        return await operacao(new RepositorioDocumento<T>(contexto, _sessao));
     }
 }

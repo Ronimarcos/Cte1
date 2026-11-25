@@ -1,6 +1,7 @@
 using Emissor.Dados;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Prototipo;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,21 +43,24 @@ public sealed class ServicoEmpresas
 {
     private readonly IDbContextFactory<EmissorDbContext> _fabrica;
     private readonly CatalogoMunicipios _municipios;
+    private readonly Sessao _sessao;
 
     /// <summary>Cria o serviço.</summary>
     /// <param name="fabrica">Fábrica de contextos do banco.</param>
     /// <param name="municipios">Catálogo de municípios para os textos de exibição.</param>
-    public ServicoEmpresas(IDbContextFactory<EmissorDbContext> fabrica, CatalogoMunicipios municipios)
+    /// <param name="sessao">Usuário logado: só lista as empresas liberadas e só o administrador grava.</param>
+    public ServicoEmpresas(IDbContextFactory<EmissorDbContext> fabrica, CatalogoMunicipios municipios, Sessao sessao)
     {
         _fabrica = fabrica;
         _municipios = municipios;
+        _sessao = sessao;
     }
 
     /// <summary>Empresas em ordem de razão social, prontas para as listas.</summary>
     public async Task<IReadOnlyList<EmpresaResumo>> ListarResumosAsync()
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        var empresas = await new RepositorioCadastro<Empresa>(contexto).ListarAsync();
+        var empresas = await new RepositorioCadastro<Empresa>(contexto, _sessao).ListarAsync();
         return empresas.OrderBy(e => e.RazaoSocial).Select(Resumir).ToList();
     }
 
@@ -65,7 +69,7 @@ public sealed class ServicoEmpresas
     public async Task<Empresa?> ObterAsync(int id)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        return await new RepositorioCadastro<Empresa>(contexto).ObterAsync(id);
+        return await new RepositorioCadastro<Empresa>(contexto, _sessao).ObterAsync(id);
     }
 
     /// <summary>Inclui a empresa (valida e traduz recusas do banco em <c>RegraNegocioException</c>).</summary>
@@ -73,7 +77,7 @@ public sealed class ServicoEmpresas
     public async Task IncluirAsync(Empresa empresa)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        await new RepositorioCadastro<Empresa>(contexto).IncluirAsync(empresa);
+        await new RepositorioCadastro<Empresa>(contexto, _sessao).IncluirAsync(empresa);
     }
 
     /// <summary>Altera a empresa.</summary>
@@ -81,7 +85,7 @@ public sealed class ServicoEmpresas
     public async Task AlterarAsync(Empresa empresa)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        await new RepositorioCadastro<Empresa>(contexto).AlterarAsync(empresa);
+        await new RepositorioCadastro<Empresa>(contexto, _sessao).AlterarAsync(empresa);
     }
 
     /// <summary>Exclui a empresa; o banco recusa se houver cadastros vinculados.</summary>
@@ -89,7 +93,7 @@ public sealed class ServicoEmpresas
     public async Task ExcluirAsync(int id)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        await new RepositorioCadastro<Empresa>(contexto).ExcluirAsync(id);
+        await new RepositorioCadastro<Empresa>(contexto, _sessao).ExcluirAsync(id);
     }
 
     /// <summary>Indica se ainda não há empresas no banco.</summary>

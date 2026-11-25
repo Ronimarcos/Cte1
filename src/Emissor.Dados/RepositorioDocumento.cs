@@ -19,6 +19,14 @@ public class RepositorioDocumento<T> : RepositorioCadastro<T> where T : Document
     {
     }
 
+    /// <summary>Cria o repositório aplicando a alçada do usuário.</summary>
+    /// <param name="contexto">Contexto do EF Core.</param>
+    /// <param name="acesso">Quem acessa e em quais empresas.</param>
+    public RepositorioDocumento(EmissorDbContext contexto, IContextoAcesso acesso)
+        : base(contexto, acesso)
+    {
+    }
+
     /// <summary>
     /// Valida e altera o documento: lê o gravado, copia os campos e substitui as listas de itens, para o banco
     /// apagar os itens antigos e incluir os editados.
@@ -28,8 +36,9 @@ public class RepositorioDocumento<T> : RepositorioCadastro<T> where T : Document
     /// <exception cref="RegraNegocioException">Pendências, documento inexistente ou de outra empresa.</exception>
     public override async Task AlterarAsync(T registro, CancellationToken cancelamento = default)
     {
+        GarantirEscrita(registro);
         Validar(registro);
-        var gravado = await Contexto.Set<T>().FirstOrDefaultAsync(d => d.Id == registro.Id, cancelamento)
+        var gravado = await Consulta().FirstOrDefaultAsync(d => d.Id == registro.Id, cancelamento)
             ?? throw new RegraNegocioException("O documento não existe mais. Atualize a lista.");
         if (gravado.EmpresaId != registro.EmpresaId)
         {
@@ -48,7 +57,7 @@ public class RepositorioDocumento<T> : RepositorioCadastro<T> where T : Document
     /// <exception cref="RegraNegocioException">Documento que não está em digitação ou vinculado a outro.</exception>
     public override async Task ExcluirAsync(int id, CancellationToken cancelamento = default)
     {
-        var situacao = await Contexto.Set<T>().Where(d => d.Id == id).Select(d => (SituacaoDocumento?)d.Situacao).FirstOrDefaultAsync(cancelamento);
+        var situacao = await Consulta().Where(d => d.Id == id).Select(d => (SituacaoDocumento?)d.Situacao).FirstOrDefaultAsync(cancelamento);
         if (situacao is null)
         {
             return;
