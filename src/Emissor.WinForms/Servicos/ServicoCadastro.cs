@@ -51,7 +51,7 @@ public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
     }
 }
 
-/// <summary>Os serviços dos cadastros da empresa, reunidos para a janela principal.</summary>
+/// <summary>Os serviços dos cadastros e documentos da empresa, reunidos para a janela principal.</summary>
 /// <param name="Participantes">Participantes.</param>
 /// <param name="Veiculos">Veículos.</param>
 /// <param name="Proprietarios">Proprietários de veículos.</param>
@@ -60,6 +60,8 @@ public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
 /// <param name="Series">Séries de numeração.</param>
 /// <param name="Certificados">Certificados digitais.</param>
 /// <param name="Protetor">Criptografia do arquivo e da senha do certificado A1.</param>
+/// <param name="Ctes">CT-e emitidos.</param>
+/// <param name="Mdfes">MDF-e emitidos.</param>
 public sealed record ServicosCadastro(
     ServicoCadastro<Participante> Participantes,
     ServicoCadastro<Veiculo> Veiculos,
@@ -68,4 +70,6 @@ public sealed record ServicosCadastro(
     ServicoCadastro<ApoliceSeguro> Apolices,
     ServicoCadastro<SerieDocumento> Series,
     ServicoCadastro<CertificadoDigital> Certificados,
-    IProtetorSegredos Protetor);
+    IProtetorSegredos Protetor,
+    ServicoDocumentos<ConhecimentoTransporte> Ctes,
+    ServicoDocumentos<ManifestoEletronico> Mdfes);

@@ -23,6 +23,9 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     /// <param name="contexto">Contexto do EF Core.</param>
     public RepositorioCadastro(EmissorDbContext contexto) => _contexto = contexto;
 
+    /// <summary>Contexto do EF Core, para os repositórios derivados.</summary>
+    protected EmissorDbContext Contexto => _contexto;
+
     /// <summary>Lista os registros que atendem ao filtro, sem rastreamento (só leitura).</summary>
     /// <param name="filtro">Condição opcional.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
@@ -64,7 +67,7 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     /// <param name="registro">Registro editado.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
     /// <exception cref="RegraNegocioException">Pendências de validação, registro repetido ou inexistente.</exception>
-    public async Task AlterarAsync(T registro, CancellationToken cancelamento = default)
+    public virtual async Task AlterarAsync(T registro, CancellationToken cancelamento = default)
     {
         Validar(registro);
         if (!await _contexto.Set<T>().AnyAsync(e => e.Id == registro.Id, cancelamento))
@@ -80,7 +83,7 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     /// <param name="id">Identificador.</param>
     /// <param name="cancelamento">Cancelamento da operação.</param>
     /// <exception cref="RegraNegocioException">Registro em uso.</exception>
-    public async Task ExcluirAsync(int id, CancellationToken cancelamento = default)
+    public virtual async Task ExcluirAsync(int id, CancellationToken cancelamento = default)
     {
         var registro = await _contexto.Set<T>().FirstOrDefaultAsync(e => e.Id == id, cancelamento);
         if (registro is null)
@@ -92,7 +95,10 @@ public class RepositorioCadastro<T> where T : EntidadeBase
         await GravarAsync(cancelamento, "excluir");
     }
 
-    private static void Validar(T registro)
+    /// <summary>Recusa o registro com pendências de validação.</summary>
+    /// <param name="registro">Registro a gravar.</param>
+    /// <exception cref="RegraNegocioException">Pendências de validação.</exception>
+    protected static void Validar(T registro)
     {
         var pendencias = registro.Validar();
         if (pendencias.Count > 0)
@@ -102,7 +108,9 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     }
 
     /// <summary>Grava e, em caso de recusa do banco, desfaz as mudanças pendentes e explica o motivo.</summary>
-    private async Task GravarAsync(CancellationToken cancelamento, string operacao)
+    /// <param name="cancelamento">Cancelamento da operação.</param>
+    /// <param name="operacao">"incluir", "alterar" ou "excluir" (para a mensagem).</param>
+    protected async Task GravarAsync(CancellationToken cancelamento, string operacao)
     {
         try
         {
@@ -113,8 +121,8 @@ public class RepositorioCadastro<T> where T : EntidadeBase
             _contexto.ChangeTracker.Clear();
             var mensagem = sqlite.Message.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase)
                 ? operacao == "excluir"
-                    ? "O registro está em uso por outros cadastros e não pode ser excluído."
-                    : "O registro aponta para um cadastro que não existe (empresa, município ou proprietário)."
+                    ? "O registro está em uso por outros cadastros ou documentos e não pode ser excluído."
+                    : "O registro aponta para um cadastro que não existe mais (empresa, município, participante, veículo, série...)."
                 : "Já existe um registro com estes dados (documento, placa, série ou apólice repetidos).";
             throw new RegraNegocioException(mensagem);
         }

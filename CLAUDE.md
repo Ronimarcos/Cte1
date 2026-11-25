@@ -88,3 +88,7 @@ Preferências do responsável pelo projeto:
   - [x] P2c: assistentes e consultas de CT-e/MDF-e lendo os cadastros do banco (documentos ainda em memória).
   - [x] P3: certificado A1/A3 real (DPAPI na máquina, A3 pelo thumbprint, `IProvedorCertificado`).
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.
+    - [x] P4a: CT-e e MDF-e gravados no banco (rascunho e pronto para transmitir), sem XML nem SEFAZ.
+    - [ ] P4b: motor DF-e offline (XSD, chave, XML, assinatura, validação).
+    - [ ] P4c: transmissão em homologação e numeração da série.
+    - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).

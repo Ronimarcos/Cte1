@@ -41,7 +41,7 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
     public string Titulo => "2. Participantes";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
+    void IEtapaCte.Carregar(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         _combosParticipante = [cboRemetente, cboDestinatario, cboExpedidor, cboRecebedor, cboTomadorOutros];
@@ -66,12 +66,12 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    void IEtapaCte.AoEntrar(CtePrototipo cte)
+    void IEtapaCte.AoEntrar(ConhecimentoTransporte cte)
     {
     }
 
     /// <inheritdoc />
-    void IEtapaCte.Ler(CtePrototipo cte)
+    void IEtapaCte.Ler(ConhecimentoTransporte cte)
     {
         cte.RemetenteId = IdSelecionado(cboRemetente);
         cte.DestinatarioId = IdSelecionado(cboDestinatario);
@@ -84,7 +84,7 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => cte.ValidarParticipantes();
+    IReadOnlyList<string> IEtapaCte.Validar(ConhecimentoTransporte cte) => cte.ValidarParticipantes();
 
     private async void btnIncluir_Click(object? sender, EventArgs e)
     {

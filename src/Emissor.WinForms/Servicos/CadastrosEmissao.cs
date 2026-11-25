@@ -6,7 +6,7 @@ namespace Emissor.WinForms.Servicos;
 /// <summary>
 /// Cadastros da empresa ativa lidos do banco ao abrir um assistente ou uma consulta de CT-e/MDF-e: participantes,
 /// veículos, proprietários, motoristas, apólices e séries, além dos municípios do IBGE. Também resolve os nomes
-/// exibidos a partir dos códigos guardados nos documentos (ainda em memória até a fatia P4).
+/// exibidos a partir dos códigos guardados nos documentos e dá acesso aos CT-e e MDF-e gravados.
 /// </summary>
 public sealed class CadastrosEmissao
 {
@@ -48,6 +48,12 @@ public sealed class CadastrosEmissao
 
     /// <summary>Operações do cadastro de participantes (usado para incluir sem sair da emissão).</summary>
     public ServicoCadastro<Participante> ServicoParticipantes => _servicos.Participantes;
+
+    /// <summary>CT-e gravados no banco.</summary>
+    public ServicoDocumentos<ConhecimentoTransporte> Ctes => _servicos.Ctes;
+
+    /// <summary>MDF-e gravados no banco.</summary>
+    public ServicoDocumentos<ManifestoEletronico> Mdfes => _servicos.Mdfes;
 
     /// <summary>Lê todos os cadastros da empresa do banco.</summary>
     /// <param name="empresa">Empresa ativa.</param>

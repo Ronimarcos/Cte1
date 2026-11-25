@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
@@ -12,7 +14,7 @@ namespace Emissor.WinForms.Formularios.Mdfe;
 public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
 {
     private List<int> _carregamento = [];
-    private List<DescargaMdfePrototipo> _descargas = [];
+    private List<DescargaMdfe> _descargas = [];
     private CadastrosEmissao? _cadastros;
     private bool _atualizandoTexto;
 
@@ -29,7 +31,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     public string Titulo => "2. Carregamento e descarga";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    void IEtapaMdfe.Carregar(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         _carregamento = [.. mdfe.MunicipiosCarregamento];
@@ -39,7 +41,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     }
 
     /// <summary>As listas de municípios seguem as UFs de início e de fim escolhidas na etapa 1.</summary>
-    void IEtapaMdfe.AoEntrar(MdfePrototipo mdfe)
+    void IEtapaMdfe.AoEntrar(ManifestoEletronico mdfe)
     {
         cboMunicipioCarregamento.Carregar(MunicipiosDaUf(mdfe.UfInicio));
         cboMunicipioDescarga.Carregar(MunicipiosDaUf(mdfe.UfFim));
@@ -48,13 +50,13 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.Ler(MdfePrototipo mdfe)
+    void IEtapaMdfe.Ler(ManifestoEletronico mdfe)
     {
         dgvDocumentos.EndEdit();
         Validate();
         mdfe.MunicipiosCarregamento = [.. _carregamento];
         mdfe.Descargas = _descargas
-            .Select(d => new DescargaMdfePrototipo
+            .Select(d => new DescargaMdfe
             {
                 MunicipioCodigo = d.MunicipioCodigo,
                 Documentos = d.Documentos
@@ -66,7 +68,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) =>
+    IReadOnlyList<string> IEtapaMdfe.Validar(ManifestoEletronico mdfe) =>
         mdfe.ValidarCarregamentoDescarga(codigo => _cadastros?.UfDoMunicipio(codigo) ?? string.Empty);
 
     private void btnAdicionarCarregamento_Click(object? sender, EventArgs e)
@@ -97,7 +99,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         var existente = _descargas.FindIndex(d => d.MunicipioCodigo == codigo);
         if (existente < 0)
         {
-            _descargas.Add(new DescargaMdfePrototipo { MunicipioCodigo = codigo });
+            _descargas.Add(new DescargaMdfe { MunicipioCodigo = codigo });
             existente = _descargas.Count - 1;
         }
 
@@ -121,7 +123,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     }
 
     /// <summary>Escolhe CT-e emitidos por este sistema e os inclui no município de descarga selecionado.</summary>
-    private void btnAdicionarCtes_Click(object? sender, EventArgs e)
+    private async void btnAdicionarCtes_Click(object? sender, EventArgs e)
     {
         if (DescargaSelecionada is not { } descarga)
         {
@@ -130,9 +132,25 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         }
 
         var jaVinculados = _descargas.SelectMany(d => d.Documentos).Where(d => d.CteId is not null).Select(d => d.CteId!.Value).ToHashSet();
-        var disponiveis = DadosFicticios.Ctes
-            .Listar(c => c.EmpresaId == _cadastros!.Empresa.Id && c.Situacao == SituacaoCte.ProntoParaTransmitir && !jaVinculados.Contains(c.Id))
-            .ToList();
+        List<ConhecimentoTransporte> disponiveis;
+        btnAdicionarCtes.Enabled = false;
+        try
+        {
+            disponiveis = (await _cadastros!.Ctes.ListarPorSituacaoAsync(_cadastros.Empresa.Id, SituacaoDocumento.ProntoParaTransmitir))
+                .Where(c => !jaVinculados.Contains(c.Id))
+                .OrderByDescending(c => c.DataEmissao)
+                .ToList();
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler os CT-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Titulo, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+        finally
+        {
+            btnAdicionarCtes.Enabled = true;
+        }
 
         using var tela = new FormSelecaoCtes(disponiveis, _cadastros!);
         if (tela.ShowDialog(this) != DialogResult.OK)
@@ -141,7 +159,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         }
 
         dgvDocumentos.EndEdit();
-        descarga.Documentos.AddRange(tela.Selecionados.Select(id => new DocumentoMdfePrototipo { Tipo = TipoDocumentoMdfe.Cte, CteId = id }));
+        descarga.Documentos.AddRange(tela.Selecionados.Select(id => new DocumentoMdfe { Tipo = TipoDocumentoMdfe.Cte, CteId = id }));
         AtualizarDescargas(lstDescargas.SelectedIndex);
     }
 
@@ -157,7 +175,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     private void dgvDocumentos_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
     {
         if (e.RowIndex >= 0 && e.ColumnIndex == colChave.Index
-            && dgvDocumentos.Rows[e.RowIndex].DataBoundItem is DocumentoMdfePrototipo { CteId: not null } documento)
+            && dgvDocumentos.Rows[e.RowIndex].DataBoundItem is DocumentoMdfe { CteId: not null } documento)
         {
             e.Value = documento.ChaveDescricao;
             e.FormattingApplied = true;
@@ -166,7 +184,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
 
     private void dgvDocumentos_CellBeginEdit(object? sender, DataGridViewCellCancelEventArgs e)
     {
-        if (dgvDocumentos.Rows[e.RowIndex].DataBoundItem is DocumentoMdfePrototipo { CteId: not null })
+        if (dgvDocumentos.Rows[e.RowIndex].DataBoundItem is DocumentoMdfe { CteId: not null })
         {
             e.Cancel = true;
         }
@@ -177,7 +195,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
 
     private void dgvDocumentos_DataError(object? sender, DataGridViewDataErrorEventArgs e) => e.ThrowException = false;
 
-    private DescargaMdfePrototipo? DescargaSelecionada =>
+    private DescargaMdfe? DescargaSelecionada =>
         lstDescargas.SelectedIndex >= 0 && lstDescargas.SelectedIndex < _descargas.Count ? _descargas[lstDescargas.SelectedIndex] : null;
 
     private void AtualizarCarregamento()
@@ -232,7 +250,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     {
         dgvDocumentos.EndEdit();
         var descarga = DescargaSelecionada;
-        dgvDocumentos.DataSource = descarga is null ? null : new BindingList<DocumentoMdfePrototipo>(descarga.Documentos);
+        dgvDocumentos.DataSource = descarga is null ? null : new BindingList<DocumentoMdfe>(descarga.Documentos);
         dgvDocumentos.Enabled = descarga is not null;
         btnAdicionarCtes.Enabled = descarga is not null;
     }
@@ -240,7 +258,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     private IEnumerable<Opcao<int>> MunicipiosDaUf(string uf) => _cadastros?.Municipios.OpcoesDaUf(uf) ?? [];
 
     /// <summary>Município e quantidade de documentos, para a lista de descargas.</summary>
-    private string TextoDescarga(DescargaMdfePrototipo descarga) =>
+    private string TextoDescarga(DescargaMdfe descarga) =>
         $"{_cadastros?.Municipio(descarga.MunicipioCodigo) ?? descarga.MunicipioCodigo.ToString()} ({descarga.Documentos.Count} doc.)";
 
     private void CriarColunas()
@@ -251,7 +269,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         dgvDocumentos.ShowCellToolTips = false;
         dgvDocumentos.Columns.Add(new DataGridViewComboBoxColumn
         {
-            DataPropertyName = nameof(DocumentoMdfePrototipo.Tipo),
+            DataPropertyName = nameof(DocumentoMdfe.Tipo),
             HeaderText = "Tipo",
             DataSource = new List<Opcao<TipoDocumentoMdfe>> { new(TipoDocumentoMdfe.Cte, "CT-e"), new(TipoDocumentoMdfe.Nfe, "NF-e") },
             ValueMember = nameof(Opcao<int>.Valor),
@@ -260,7 +278,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         });
         colChave = new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(DocumentoMdfePrototipo.Chave),
+            DataPropertyName = nameof(DocumentoMdfe.Chave),
             HeaderText = "Chave de acesso (44 dígitos)",
             MaxInputLength = 54,
             FillWeight = 82,

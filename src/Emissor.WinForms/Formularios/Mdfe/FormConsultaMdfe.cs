@@ -1,3 +1,6 @@
+using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -8,9 +11,9 @@ namespace Emissor.WinForms.Formularios.Mdfe;
 internal sealed class LinhaMdfe
 {
     /// <summary>Monta a linha do MDF-e.</summary>
-    /// <param name="mdfe">MDF-e (ainda em memória até a fatia P4).</param>
+    /// <param name="mdfe">MDF-e (lido do banco).</param>
     /// <param name="cadastros">Cadastros da empresa.</param>
-    public LinhaMdfe(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    public LinhaMdfe(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         Id = mdfe.Id;
         Situacao = mdfe.Situacao;
@@ -31,7 +34,7 @@ internal sealed class LinhaMdfe
     public int Id { get; }
 
     /// <summary>Situação (para a cor e o botão Excluir).</summary>
-    public SituacaoMdfe Situacao { get; }
+    public SituacaoDocumento Situacao { get; }
 
     /// <summary>UF de fim.</summary>
     public string UfFim { get; }
@@ -76,6 +79,8 @@ public partial class FormConsultaMdfe : Form
     private readonly Func<Task<CadastrosEmissao>> _carregarCadastros;
     private CadastrosEmissao _cadastros;
     private bool _ocupado;
+    private bool _carregado;
+    private int _versao;
 
     /// <summary>Cria a consulta para a empresa ativa.</summary>
     /// <param name="cadastros">Cadastros da empresa, já lidos do banco.</param>
@@ -90,31 +95,57 @@ public partial class FormConsultaMdfe : Form
         cboSituacao.SelectedIndex = 0;
         dtpDe.Value = DateTime.Today.AddDays(-30);
         dtpAte.Value = DateTime.Today;
-        Recarregar();
+        Load += async (_, _) =>
+        {
+            _carregado = true;
+            await RecarregarAsync();
+        };
     }
 
     /// <summary>Opções do filtro de situação; <c>null</c> = todas.</summary>
     private static IReadOnlyList<Opcao<int>> OpcoesSituacao { get; } =
     [
         new(-1, "Todas"),
-        new((int)SituacaoMdfe.EmDigitacao, "Em digitação"),
-        new((int)SituacaoMdfe.ProntoParaTransmitir, "Pronto para transmitir"),
+        new((int)SituacaoDocumento.EmDigitacao, "Em digitação"),
+        new((int)SituacaoDocumento.ProntoParaTransmitir, "Pronto para transmitir"),
     ];
 
     /// <summary>Recarrega a grade com os filtros atuais e posiciona no MDF-e indicado (ou no selecionado).</summary>
     /// <param name="idSelecionar">MDF-e a selecionar após recarregar.</param>
-    internal void Recarregar(int? idSelecionar = null)
+    internal async Task RecarregarAsync(int? idSelecionar = null)
     {
+        if (!_carregado)
+        {
+            return;
+        }
+
+        var versao = ++_versao;
         idSelecionar ??= Selecionado?.Id;
         var de = dtpDe.Value.Date;
         var ate = dtpAte.Value.Date;
         var situacao = cboSituacao.ValorSelecionado<int>() ?? -1;
         var termo = txtPesquisa.Text.Trim();
 
-        var lista = DadosFicticios.Mdfes
-            .Listar(c => c.EmpresaId == _cadastros.Empresa.Id
-                && c.DataEmissao.Date >= de && c.DataEmissao.Date <= ate
-                && (situacao < 0 || (int)c.Situacao == situacao))
+        IReadOnlyList<ManifestoEletronico> documentos;
+        try
+        {
+            documentos = await _cadastros.Mdfes.ListarAsync(_cadastros.Empresa.Id, de, ate,
+                situacao < 0 ? null : (SituacaoDocumento)situacao);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler os MDF-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        // Filtros alterados durante a leitura: vale só a leitura mais recente.
+        if (versao != _versao || IsDisposed)
+        {
+            return;
+        }
+
+        var lista = documentos
             .Select(c => new LinhaMdfe(c, _cadastros))
             .Where(l => termo.Length == 0 || l.TextoPesquisa.Contains(termo, StringComparison.CurrentCultureIgnoreCase))
             .OrderByDescending(l => l.DataEmissao)
@@ -164,13 +195,13 @@ public partial class FormConsultaMdfe : Form
         }
     }
 
-    private void Filtro_Alterado(object? sender, EventArgs e) => Recarregar();
+    private async void Filtro_Alterado(object? sender, EventArgs e) => await RecarregarAsync();
 
     private async void btnNovo_Click(object? sender, EventArgs e) => await NovoAsync();
 
     private async void btnAbrir_Click(object? sender, EventArgs e) => await AbrirSelecionadoAsync();
 
-    private void btnExcluir_Click(object? sender, EventArgs e) => ExcluirSelecionado();
+    private async void btnExcluir_Click(object? sender, EventArgs e) => await ExcluirSelecionadoAsync();
 
     private void btnFechar_Click(object? sender, EventArgs e) => Close();
 
@@ -203,7 +234,7 @@ public partial class FormConsultaMdfe : Form
         else if (e.KeyCode == Keys.Delete)
         {
             e.Handled = true;
-            ExcluirSelecionado();
+            await ExcluirSelecionadoAsync();
         }
     }
 
@@ -211,7 +242,7 @@ public partial class FormConsultaMdfe : Form
     private void dgvMdfes_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
     {
         if (e.RowIndex >= 0 && e.CellStyle is not null
-            && dgvMdfes.Rows[e.RowIndex].DataBoundItem is LinhaMdfe { Situacao: SituacaoMdfe.ProntoParaTransmitir })
+            && dgvMdfes.Rows[e.RowIndex].DataBoundItem is LinhaMdfe { Situacao: SituacaoDocumento.ProntoParaTransmitir })
         {
             e.CellStyle.BackColor = Color.Honeydew;
         }
@@ -223,18 +254,43 @@ public partial class FormConsultaMdfe : Form
     {
         var mdfe = Selecionado;
         btnAbrir.Enabled = mdfe is not null;
-        btnExcluir.Enabled = mdfe is { Situacao: SituacaoMdfe.EmDigitacao };
+        btnExcluir.Enabled = mdfe is { Situacao: SituacaoDocumento.EmDigitacao };
     }
 
-    private Task NovoAsync() => AbrirAssistenteAsync(new MdfePrototipo { EmpresaId = _cadastros.Empresa.Id });
+    private Task NovoAsync() => AbrirAssistenteAsync(new ManifestoEletronico { EmpresaId = _cadastros.Empresa.Id });
 
-    private Task AbrirSelecionadoAsync() =>
-        Selecionado is { } atual && DadosFicticios.Mdfes.ObterPorId(atual.Id) is { } copia
-            ? AbrirAssistenteAsync(copia)
-            : Task.CompletedTask;
+    /// <summary>Lê do banco o MDF-e selecionado, com os itens, e abre o assistente.</summary>
+    private async Task AbrirSelecionadoAsync()
+    {
+        if (Selecionado is not { } atual || _ocupado)
+        {
+            return;
+        }
+
+        ManifestoEletronico? copia;
+        try
+        {
+            copia = await _cadastros.Mdfes.ObterAsync(atual.Id);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler o MDF-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (copia is null)
+        {
+            MessageBox.Show(this, "O MDF-e não existe mais. A lista será atualizada.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            await RecarregarAsync();
+            return;
+        }
+
+        await AbrirAssistenteAsync(copia);
+    }
 
     /// <summary>Relê os cadastros do banco e abre o assistente; ao salvar, atualiza a lista.</summary>
-    private async Task AbrirAssistenteAsync(MdfePrototipo mdfe)
+    private async Task AbrirAssistenteAsync(ManifestoEletronico mdfe)
     {
         if (_ocupado)
         {
@@ -248,11 +304,11 @@ public partial class FormConsultaMdfe : Form
             using var tela = new FormEmissaoMdfe(mdfe, _cadastros);
             if (tela.ShowDialog(this) == DialogResult.OK)
             {
-                Recarregar(mdfe.Id);
+                await RecarregarAsync(mdfe.Id);
             }
             else
             {
-                Recarregar();
+                await RecarregarAsync();
             }
         }
         catch (Exception erro)
@@ -266,14 +322,14 @@ public partial class FormConsultaMdfe : Form
         }
     }
 
-    private void ExcluirSelecionado()
+    private async Task ExcluirSelecionadoAsync()
     {
         if (Selecionado is not { } mdfe)
         {
             return;
         }
 
-        if (mdfe.Situacao != SituacaoMdfe.EmDigitacao)
+        if (mdfe.Situacao != SituacaoDocumento.EmDigitacao)
         {
             MessageBox.Show(this, "Só MDF-e em digitação podem ser excluídos.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
@@ -283,8 +339,21 @@ public partial class FormConsultaMdfe : Form
             Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (resposta == DialogResult.Yes)
         {
-            DadosFicticios.Mdfes.Excluir(mdfe.Id);
-            Recarregar();
+            try
+            {
+                await _cadastros.Mdfes.ExcluirAsync(mdfe.Id);
+            }
+            catch (RegraNegocioException erro)
+            {
+                MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception erro)
+            {
+                MessageBox.Show(this, $"Não foi possível excluir o MDF-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            await RecarregarAsync();
         }
     }
 

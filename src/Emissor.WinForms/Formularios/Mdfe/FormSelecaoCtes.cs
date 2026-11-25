@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.Globalization;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -12,7 +14,7 @@ public partial class FormSelecaoCtes : Form
     /// <summary>Cria o diálogo com os CT-e disponíveis.</summary>
     /// <param name="ctes">CT-e que podem ser vinculados (prontos e ainda não usados neste MDF-e).</param>
     /// <param name="cadastros">Cadastros da empresa, para os nomes dos participantes.</param>
-    internal FormSelecaoCtes(IEnumerable<CtePrototipo> ctes, CadastrosEmissao cadastros)
+    internal FormSelecaoCtes(IEnumerable<ConhecimentoTransporte> ctes, CadastrosEmissao cadastros)
     {
         InitializeComponent();
         AtalhosTeclado.ConfigurarDialogo(this, btnOk);

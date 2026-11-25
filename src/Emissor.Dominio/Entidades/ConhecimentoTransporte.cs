@@ -1,26 +1,15 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using Emissor.Dominio.Enums;
-using Emissor.WinForms.Servicos;
 
-namespace Emissor.WinForms.Prototipo;
+namespace Emissor.Dominio.Entidades;
 
 /// <summary>
-/// CT-e fictício do protótipo da emissão (modal rodoviário). Guarda só o que as telas pedem; a montagem do XML,
-/// a chave de acesso, a assinatura e a transmissão entram com o motor DF-e, a partir dos XSD do NT 2026.005.
-/// As validações estão separadas por etapa do assistente.
+/// CT-e (modelo 57, modal rodoviário) emitido pela empresa. Guarda o que o assistente de emissão pede; a montagem
+/// do XML, a chave de acesso, a assinatura e a transmissão entram com o motor DF-e (P4b e P4c), a partir dos XSD
+/// do NT 2026.005. As validações estão separadas por etapa do assistente.
 /// </summary>
-public sealed partial class CtePrototipo : RegistroPrototipo
+public partial class ConhecimentoTransporte : DocumentoFiscal
 {
-    private static readonly CultureInfo Brasil = CultureInfo.GetCultureInfo("pt-BR");
-
-    /// <summary>Empresa emitente.</summary>
-    public int EmpresaId { get; set; }
-
-    /// <summary>Situação no protótipo.</summary>
-    public SituacaoCte Situacao { get; set; } = SituacaoCte.EmDigitacao;
-
     // ---- Etapa 1: identificação (grupo ide) ----
 
     /// <summary>Tipo do CT-e (<c>ide/tpCTe</c>).</summary>
@@ -29,20 +18,11 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     /// <summary>Tipo do serviço (<c>ide/tpServ</c>).</summary>
     public TipoServicoCte? TipoServico { get; set; } = TipoServicoCte.Normal;
 
-    /// <summary>Série escolhida no cadastro de séries (<c>ide/serie</c>).</summary>
-    public int? SerieId { get; set; }
-
-    /// <summary>Número do CT-e (<c>ide/nCT</c>); definido só na transmissão, que o protótipo não faz.</summary>
-    public int? Numero { get; set; }
-
     /// <summary>CFOP da prestação (<c>ide/CFOP</c>, 4 dígitos).</summary>
     public string Cfop { get; set; } = string.Empty;
 
     /// <summary>Natureza da operação (<c>ide/natOp</c>).</summary>
     public string NaturezaOperacao { get; set; } = string.Empty;
-
-    /// <summary>Data de emissão (<c>ide/dhEmi</c>).</summary>
-    public DateTime DataEmissao { get; set; } = DateTime.Today;
 
     // ---- Etapa 2: participantes ----
 
@@ -82,13 +62,13 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     public string OutrasCaracteristicas { get; set; } = string.Empty;
 
     /// <summary>Quantidades da carga (<c>infCarga/infQ</c>).</summary>
-    public List<QuantidadeCargaPrototipo> Quantidades { get; set; } = [];
+    public List<QuantidadeCarga> Quantidades { get; set; } = [];
 
     /// <summary>NF-e transportadas (<c>infDoc/infNFe</c>).</summary>
-    public List<DocumentoNfePrototipo> DocumentosNfe { get; set; } = [];
+    public List<DocumentoNfeCte> DocumentosNfe { get; set; } = [];
 
     /// <summary>Documentos anteriores (<c>docAnt</c>), em subcontratação e redespacho.</summary>
-    public List<DocumentoAnteriorPrototipo> DocumentosAnteriores { get; set; } = [];
+    public List<DocumentoAnteriorCte> DocumentosAnteriores { get; set; } = [];
 
     /// <summary>Chave do CT-e complementado (<c>infCteComp/chCTe</c>), no CT-e de complemento.</summary>
     public string ChaveCteComplementado { get; set; } = string.Empty;
@@ -96,7 +76,7 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     // ---- Etapa 4: valores (vPrest) ----
 
     /// <summary>Componentes do valor da prestação (<c>vPrest/Comp</c>).</summary>
-    public List<ComponenteFretePrototipo> Componentes { get; set; } = [];
+    public List<ComponenteFrete> Componentes { get; set; } = [];
 
     /// <summary>Valor a receber (<c>vPrest/vRec</c>).</summary>
     public decimal? ValorReceber { get; set; }
@@ -117,24 +97,6 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     /// <summary>Subcontratação e redespachos exigem o documento anterior (<c>docAnt</c>).</summary>
     public bool ExigeDocumentoAnterior =>
         !EhComplemento && TipoServico is TipoServicoCte.Subcontratacao or TipoServicoCte.Redespacho or TipoServicoCte.RedespachoIntermediario;
-
-    // ---- Descrições para a lista e a conferência ----
-
-    /// <summary>Número para exibição.</summary>
-    public string NumeroDescricao => Numero?.ToString(Brasil) ?? "—";
-
-    /// <summary>Tipo do CT-e para exibição.</summary>
-    public string TipoDescricao => OpcoesCadastro.Texto(OpcoesCadastro.TiposCte, Tipo);
-
-    /// <summary>Tipo do serviço para exibição.</summary>
-    public string TipoServicoDescricao => OpcoesCadastro.Texto(OpcoesCadastro.TiposServicoCte, TipoServico);
-
-    /// <summary>Situação para exibição.</summary>
-    public string SituacaoDescricao => Situacao switch
-    {
-        SituacaoCte.ProntoParaTransmitir => "Pronto para transmitir",
-        _ => "Em digitação",
-    };
 
     /// <summary>Participante que é o tomador, conforme o campo <see cref="Tomador"/>.</summary>
     public int? TomadorId => Tomador switch
@@ -226,73 +188,77 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     public override IReadOnlyList<string> ValidarObrigatorios() =>
         [.. ValidarIdentificacao(), .. ValidarParticipantes(), .. ValidarCargaDocumentos(), .. ValidarValores()];
 
-    /// <summary>Texto da conferência (etapa 5), com os nomes lidos dos cadastros do banco.</summary>
-    /// <param name="cadastros">Cadastros da empresa.</param>
-    public string MontarResumo(CadastrosEmissao cadastros)
-    {
-        var texto = new StringBuilder();
-        texto.AppendLine("IDENTIFICAÇÃO");
-        texto.AppendLine($"  Tipo: {TipoDescricao}    Serviço: {TipoServicoDescricao}");
-        texto.AppendLine($"  Série: {cadastros.NumeroSerie(SerieId)}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
-        texto.AppendLine($"  CFOP: {Cfop} - {NaturezaOperacao}");
-        texto.AppendLine();
-        texto.AppendLine("PARTICIPANTES");
-        texto.AppendLine($"  Remetente: {cadastros.NomeParticipante(RemetenteId)}");
-        texto.AppendLine($"  Destinatário: {cadastros.NomeParticipante(DestinatarioId)}");
-        if (ExpedidorId is not null) texto.AppendLine($"  Expedidor: {cadastros.NomeParticipante(ExpedidorId)}");
-        if (RecebedorId is not null) texto.AppendLine($"  Recebedor: {cadastros.NomeParticipante(RecebedorId)}");
-        texto.AppendLine($"  Tomador: {OpcoesCadastro.Texto(OpcoesCadastro.Tomadores, Tomador)} - {cadastros.NomeParticipante(TomadorId)}");
-        texto.AppendLine($"  Percurso: {cadastros.Municipio(MunicipioInicioCodigo)} → {cadastros.Municipio(MunicipioFimCodigo)}");
-        texto.AppendLine();
-
-        if (EhComplemento)
-        {
-            texto.AppendLine("CT-E COMPLEMENTADO");
-            texto.AppendLine($"  Chave: {ChaveCteComplementado}");
-        }
-        else
-        {
-            texto.AppendLine("CARGA");
-            texto.AppendLine($"  Valor: {Moeda(ValorCarga ?? 0)}    Produto predominante: {ProdutoPredominante}");
-            if (!string.IsNullOrWhiteSpace(OutrasCaracteristicas)) texto.AppendLine($"  Outras características: {OutrasCaracteristicas}");
-            foreach (var quantidade in Quantidades)
-            {
-                var unidade = OpcoesCadastro.Texto(OpcoesCadastro.UnidadesMedidaCarga, quantidade.Unidade);
-                texto.AppendLine($"  {quantidade.TipoMedida}: {quantidade.Quantidade.ToString("N4", Brasil)} ({unidade})");
-            }
-
-            texto.AppendLine();
-            texto.AppendLine($"DOCUMENTOS ({DocumentosNfe.Count} NF-e)");
-            foreach (var documento in DocumentosNfe) texto.AppendLine($"  NF-e {documento.Chave}");
-            foreach (var anterior in DocumentosAnteriores)
-            {
-                texto.AppendLine($"  Doc. anterior: {anterior.NomeEmitente} ({anterior.CnpjCpfEmitente}) CT-e {anterior.ChaveCte}");
-            }
-        }
-
-        texto.AppendLine();
-        texto.AppendLine("VALORES");
-        foreach (var componente in Componentes) texto.AppendLine($"  {componente.Nome}: {Moeda(componente.Valor)}");
-        texto.AppendLine($"  Total da prestação: {Moeda(ValorTotalPrestacao)}    A receber: {Moeda(ValorReceber ?? 0)}");
-        texto.AppendLine("  ICMS: Simples Nacional (grupo ICMSSN, CST 90, indSN 1)");
-        texto.AppendLine("  IBS/CBS: a calcular na implementação (NT 2026.005)");
-        return texto.ToString();
-    }
-
     /// <inheritdoc />
-    protected override void CopiarColecoes()
+    public override void CopiarItensDe(DocumentoFiscal origem)
     {
-        Quantidades = Quantidades.Select(q => q.Copiar()).ToList();
-        DocumentosNfe = DocumentosNfe.Select(d => d.Copiar()).ToList();
-        DocumentosAnteriores = DocumentosAnteriores.Select(d => d.Copiar()).ToList();
-        Componentes = Componentes.Select(c => c.Copiar()).ToList();
+        var cte = (ConhecimentoTransporte)origem;
+        Quantidades = cte.Quantidades.Select(q => q.Copiar()).ToList();
+        DocumentosNfe = cte.DocumentosNfe.Select(d => d.Copiar()).ToList();
+        DocumentosAnteriores = cte.DocumentosAnteriores.Select(d => d.Copiar()).ToList();
+        Componentes = cte.Componentes.Select(c => c.Copiar()).ToList();
     }
-
-    private static string Moeda(decimal valor) => valor.ToString("C2", Brasil);
 
     [GeneratedRegex("^[0-9]{44}$")]
     private static partial Regex ChaveValida();
 
     [GeneratedRegex("^[0-9]{4}$")]
     private static partial Regex CfopValido();
+}
+
+/// <summary>Quantidade da carga (grupo <c>infCarga/infQ</c>). Propriedades com setter público para edição em grade.</summary>
+public class QuantidadeCarga
+{
+    /// <summary>Unidade de medida (<c>cUnid</c>).</summary>
+    public UnidadeMedidaCarga Unidade { get; set; } = UnidadeMedidaCarga.Quilograma;
+
+    /// <summary>Tipo da medida (<c>tpMed</c>), ex.: "PESO BRUTO".</summary>
+    public string TipoMedida { get; set; } = string.Empty;
+
+    /// <summary>Quantidade (<c>qCarga</c>).</summary>
+    public decimal Quantidade { get; set; }
+
+    /// <summary>Cópia independente da linha.</summary>
+    public QuantidadeCarga Copiar() => new() { Unidade = Unidade, TipoMedida = TipoMedida, Quantidade = Quantidade };
+}
+
+/// <summary>NF-e transportada (grupo <c>infDoc/infNFe</c>).</summary>
+public class DocumentoNfeCte
+{
+    /// <summary>Chave de acesso da NF-e com 44 dígitos (<c>chave</c>).</summary>
+    public string Chave { get; set; } = string.Empty;
+
+    /// <summary>Cópia independente da linha.</summary>
+    public DocumentoNfeCte Copiar() => new() { Chave = Chave };
+}
+
+/// <summary>
+/// Documento de transporte anterior (grupo <c>docAnt/emiDocAnt</c>), usado em subcontratação e redespacho.
+/// Considera só o CT-e eletrônico do emitente anterior.
+/// </summary>
+public class DocumentoAnteriorCte
+{
+    /// <summary>CNPJ ou CPF do emitente do documento anterior.</summary>
+    public string CnpjCpfEmitente { get; set; } = string.Empty;
+
+    /// <summary>Razão social ou nome do emitente (<c>xNome</c>).</summary>
+    public string NomeEmitente { get; set; } = string.Empty;
+
+    /// <summary>Chave do CT-e anterior com 44 dígitos (<c>idDocAntEle/chCTe</c>).</summary>
+    public string ChaveCte { get; set; } = string.Empty;
+
+    /// <summary>Cópia independente da linha.</summary>
+    public DocumentoAnteriorCte Copiar() => new() { CnpjCpfEmitente = CnpjCpfEmitente, NomeEmitente = NomeEmitente, ChaveCte = ChaveCte };
+}
+
+/// <summary>Componente do valor da prestação (grupo <c>vPrest/Comp</c>).</summary>
+public class ComponenteFrete
+{
+    /// <summary>Nome do componente (<c>xNome</c>, até 15 caracteres), ex.: "FRETE PESO".</summary>
+    public string Nome { get; set; } = string.Empty;
+
+    /// <summary>Valor do componente (<c>vComp</c>).</summary>
+    public decimal Valor { get; set; }
+
+    /// <summary>Cópia independente da linha.</summary>
+    public ComponenteFrete Copiar() => new() { Nome = Nome, Valor = Valor };
 }

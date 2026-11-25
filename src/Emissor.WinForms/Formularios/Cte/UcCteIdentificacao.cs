@@ -1,3 +1,4 @@
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
@@ -23,7 +24,7 @@ public partial class UcCteIdentificacao : UserControl, IEtapaCte
     public string Titulo => "1. Identificação";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
+    void IEtapaCte.Carregar(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         cboTipo.Carregar(OpcoesCadastro.TiposCte);
@@ -50,12 +51,12 @@ public partial class UcCteIdentificacao : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    void IEtapaCte.AoEntrar(CtePrototipo cte)
+    void IEtapaCte.AoEntrar(ConhecimentoTransporte cte)
     {
     }
 
     /// <inheritdoc />
-    void IEtapaCte.Ler(CtePrototipo cte)
+    void IEtapaCte.Ler(ConhecimentoTransporte cte)
     {
         cte.Tipo = cboTipo.ValorSelecionado<TipoCte>();
         cte.TipoServico = cboTipoServico.ValorSelecionado<TipoServicoCte>();
@@ -66,7 +67,7 @@ public partial class UcCteIdentificacao : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => cte.ValidarIdentificacao();
+    IReadOnlyList<string> IEtapaCte.Validar(ConhecimentoTransporte cte) => cte.ValidarIdentificacao();
 
     private void cboSerie_SelectedIndexChanged(object? sender, EventArgs e) => AtualizarProximoNumero();
 

@@ -1,3 +1,4 @@
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
@@ -26,7 +27,7 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
     public string Titulo => "1. Identificação";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    void IEtapaMdfe.Carregar(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         cboTipoEmitente.Carregar(OpcoesCadastro.TiposEmitenteMdfe);
@@ -60,12 +61,12 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.AoEntrar(MdfePrototipo mdfe)
+    void IEtapaMdfe.AoEntrar(ManifestoEletronico mdfe)
     {
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.Ler(MdfePrototipo mdfe)
+    void IEtapaMdfe.Ler(ManifestoEletronico mdfe)
     {
         mdfe.TipoEmitente = cboTipoEmitente.ValorSelecionado<TipoEmitenteMdfe>();
         var transportador = cboTipoTransportador.ValorSelecionado<int>() ?? NaoInformado;
@@ -82,7 +83,7 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) => mdfe.ValidarIdentificacao();
+    IReadOnlyList<string> IEtapaMdfe.Validar(ManifestoEletronico mdfe) => mdfe.ValidarIdentificacao();
 
     private void cboSerie_SelectedIndexChanged(object? sender, EventArgs e) => AtualizarProximoNumero();
 

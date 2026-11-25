@@ -163,11 +163,11 @@ public partial class FormPrincipal : Form
     /// <summary>Abre o assistente de emissão para um CT-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
     private async void EmitirCte() => await AbrirComCadastrosAsync(cadastros =>
     {
-        var cte = new CtePrototipo { EmpresaId = _empresa.Id };
+        var cte = new ConhecimentoTransporte { EmpresaId = _empresa.Id };
         using var tela = new FormEmissaoCte(cte, cadastros);
         if (tela.ShowDialog(this) == DialogResult.OK)
         {
-            MdiChildren.OfType<FormConsultaCte>().FirstOrDefault()?.Recarregar(cte.Id);
+            _ = MdiChildren.OfType<FormConsultaCte>().FirstOrDefault()?.RecarregarAsync(cte.Id);
         }
     });
 
@@ -187,11 +187,11 @@ public partial class FormPrincipal : Form
     /// <summary>Abre o assistente de emissão para um MDF-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
     private async void EmitirMdfe() => await AbrirComCadastrosAsync(cadastros =>
     {
-        var mdfe = new MdfePrototipo { EmpresaId = _empresa.Id };
+        var mdfe = new ManifestoEletronico { EmpresaId = _empresa.Id };
         using var tela = new FormEmissaoMdfe(mdfe, cadastros);
         if (tela.ShowDialog(this) == DialogResult.OK)
         {
-            MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault()?.Recarregar(mdfe.Id);
+            _ = MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault()?.RecarregarAsync(mdfe.Id);
         }
     });
 

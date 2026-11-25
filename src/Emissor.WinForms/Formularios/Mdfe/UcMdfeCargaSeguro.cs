@@ -1,3 +1,4 @@
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
@@ -15,7 +16,7 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     /// <summary>Valor da opção "(nenhuma)" na lista de apólices.</summary>
     private const int Nenhuma = 0;
 
-    private MdfePrototipo? _mdfe;
+    private ManifestoEletronico? _mdfe;
     private CadastrosEmissao? _cadastros;
 
     /// <summary>Cria a etapa.</summary>
@@ -30,7 +31,7 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     public string Titulo => "4. Carga, seguro e totais";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    void IEtapaMdfe.Carregar(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         cboTipoCarga.Carregar(OpcoesCadastro.TiposCargaMdfe);
@@ -51,7 +52,7 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     }
 
     /// <summary>Atualiza as quantidades de documentos e a indicação de seguro obrigatório.</summary>
-    void IEtapaMdfe.AoEntrar(MdfePrototipo mdfe)
+    void IEtapaMdfe.AoEntrar(ManifestoEletronico mdfe)
     {
         _mdfe = mdfe;
         lblQuantidades.Text = $"CT-e: {mdfe.QuantidadeCte}    NF-e: {mdfe.QuantidadeNfe}";
@@ -60,7 +61,7 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.Ler(MdfePrototipo mdfe)
+    void IEtapaMdfe.Ler(ManifestoEletronico mdfe)
     {
         mdfe.TipoCarga = cboTipoCarga.ValorSelecionado<TipoCargaMdfe>();
         mdfe.ProdutoPredominante = txtProduto.Text.Trim();
@@ -73,19 +74,38 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) => mdfe.ValidarCargaSeguro();
+    IReadOnlyList<string> IEtapaMdfe.Validar(ManifestoEletronico mdfe) => mdfe.ValidarCargaSeguro();
 
     private void cboApolice_SelectedIndexChanged(object? sender, EventArgs e) => AtualizarDadosApolice();
 
     /// <summary>Soma valor e peso dos CT-e do sistema vinculados; o peso usa as quantidades em KG e TON dos CT-e.</summary>
-    private void btnRecalcular_Click(object? sender, EventArgs e)
+    private async void btnRecalcular_Click(object? sender, EventArgs e)
     {
-        var ctes = (_mdfe?.Descargas ?? [])
+        var ids = (_mdfe?.Descargas ?? [])
             .SelectMany(d => d.Documentos)
             .Where(d => d.CteId is not null)
-            .Select(d => DadosFicticios.Ctes.ObterPorId(d.CteId!.Value))
-            .OfType<CtePrototipo>()
-            .ToList();
+            .Select(d => d.CteId!.Value)
+            .ToHashSet();
+        IReadOnlyList<ConhecimentoTransporte> ctes = [];
+        if (ids.Count > 0 && _cadastros is not null)
+        {
+            btnRecalcular.Enabled = false;
+            try
+            {
+                ctes = await _cadastros.Ctes.ListarPorIdsAsync(_cadastros.Empresa.Id, ids);
+            }
+            catch (Exception erro)
+            {
+                MessageBox.Show(this, $"Não foi possível ler os CT-e vinculados.{Environment.NewLine}{erro.GetBaseException().Message}",
+                    Titulo, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            finally
+            {
+                btnRecalcular.Enabled = true;
+            }
+        }
+
         if (ctes.Count == 0)
         {
             MessageBox.Show(this, "Nenhum CT-e do sistema foi vinculado na etapa 2. Informe valor e peso manualmente.",

@@ -1,26 +1,16 @@
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using Emissor.Dominio.Enums;
-using Emissor.WinForms.Servicos;
+using Emissor.Dominio.Regras;
 
-namespace Emissor.WinForms.Prototipo;
+namespace Emissor.Dominio.Entidades;
 
 /// <summary>
-/// MDF-e fictício do protótipo da emissão (modal rodoviário). Guarda só o que as telas pedem; montagem do XML,
-/// chave, assinatura, transmissão e eventos entram com o motor DF-e, a partir dos XSD do MDF-e 3.00b.
+/// MDF-e (modelo 58, modal rodoviário) emitido pela empresa. Guarda o que o assistente de emissão pede; montagem
+/// do XML, chave, assinatura, transmissão e eventos entram com o motor DF-e, a partir dos XSD do MDF-e 3.00b.
 /// Contratante e pagamento do frete (<c>infContratante</c>, <c>infPag</c>) ficam fora até a pendência 6 do levantamento.
 /// </summary>
-public sealed partial class MdfePrototipo : RegistroPrototipo
+public partial class ManifestoEletronico : DocumentoFiscal
 {
-    private static readonly CultureInfo Brasil = CultureInfo.GetCultureInfo("pt-BR");
-
-    /// <summary>Empresa emitente.</summary>
-    public int EmpresaId { get; set; }
-
-    /// <summary>Situação no protótipo.</summary>
-    public SituacaoMdfe Situacao { get; set; } = SituacaoMdfe.EmDigitacao;
-
     // ---- Etapa 1: identificação (ide) ----
 
     /// <summary>Tipo do emitente (<c>ide/tpEmit</c>).</summary>
@@ -28,15 +18,6 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
 
     /// <summary>Tipo do transportador (<c>ide/tpTransp</c>), opcional.</summary>
     public TipoTransportador? TipoTransportador { get; set; }
-
-    /// <summary>Série escolhida no cadastro de séries (<c>ide/serie</c>).</summary>
-    public int? SerieId { get; set; }
-
-    /// <summary>Número do MDF-e (<c>ide/nMDF</c>); definido só na transmissão.</summary>
-    public int? Numero { get; set; }
-
-    /// <summary>Data de emissão (<c>ide/dhEmi</c>).</summary>
-    public DateTime DataEmissao { get; set; } = DateTime.Today;
 
     /// <summary>Início previsto da viagem (<c>ide/dhIniViagem</c>), opcional.</summary>
     public DateTime? InicioViagem { get; set; }
@@ -52,25 +33,25 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
 
     // ---- Etapa 2: carregamento e descarga ----
 
-    /// <summary>Municípios de carregamento (<c>ide/infMunCarrega</c>, 1 a 50).</summary>
+    /// <summary>Municípios de carregamento (<c>ide/infMunCarrega</c>, 1 a 50), pelo código IBGE.</summary>
     public List<int> MunicipiosCarregamento { get; set; } = [];
 
     /// <summary>Municípios de descarga com os documentos (<c>infDoc/infMunDescarga</c>).</summary>
-    public List<DescargaMdfePrototipo> Descargas { get; set; } = [];
+    public List<DescargaMdfe> Descargas { get; set; } = [];
 
     // ---- Etapa 3: veículos, condutores e CIOT (rodo) ----
 
     /// <summary>Veículo de tração (<c>rodo/veicTracao</c>).</summary>
     public int? VeiculoTracaoId { get; set; }
 
-    /// <summary>Reboques (<c>rodo/veicReboque</c>, até 3).</summary>
+    /// <summary>Reboques (<c>rodo/veicReboque</c>, até 3), pelo código do veículo.</summary>
     public List<int> ReboquesIds { get; set; } = [];
 
-    /// <summary>Condutores (<c>veicTracao/condutor</c>, 1 a 10).</summary>
+    /// <summary>Condutores (<c>veicTracao/condutor</c>, 1 a 10), pelo código do motorista.</summary>
     public List<int> CondutoresIds { get; set; } = [];
 
     /// <summary>CIOT da viagem (<c>rodo/infANTT/infCIOT</c>).</summary>
-    public List<CiotPrototipo> Ciots { get; set; } = [];
+    public List<CiotMdfe> Ciots { get; set; } = [];
 
     // ---- Etapa 4: carga, seguro e totais ----
 
@@ -119,16 +100,8 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
     /// <summary>Seguro exigido para quem transporta carga de terceiros (Lei 11.442/2007, citada na anotação do <c>respSeg</c>).</summary>
     public bool ExigeSeguro => TipoEmitente is TipoEmitenteMdfe.PrestadorServico or TipoEmitenteMdfe.CteGlobalizado;
 
-    // ---- Descrições ----
-
-    /// <summary>Número para exibição.</summary>
-    public string NumeroDescricao => Numero?.ToString(Brasil) ?? "—";
-
     /// <summary>Percurso para exibição (ex.: "MT → MS → SP").</summary>
     public string PercursoDescricao => string.Join(" → ", new[] { UfInicio }.Concat(Percurso).Append(UfFim).Where(u => u.Length > 0));
-
-    /// <summary>Situação para exibição.</summary>
-    public string SituacaoDescricao => Situacao == SituacaoMdfe.ProntoParaTransmitir ? "Pronto para transmitir" : "Em digitação";
 
     // ---- Validações por etapa ----
 
@@ -138,9 +111,9 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
         var faltando = new List<string>();
         if (TipoEmitente is null) faltando.Add("Tipo do emitente");
         if (SerieId is null) faltando.Add("Série");
-        if (!OpcoesCadastro.Ufs.Contains(UfInicio)) faltando.Add("UF de início");
-        if (!OpcoesCadastro.Ufs.Contains(UfFim)) faltando.Add("UF de fim");
-        if (Percurso.Any(u => !OpcoesCadastro.Ufs.Contains(u))) faltando.Add("UFs do percurso: use siglas válidas separadas por vírgula");
+        if (!Formatos.UfValida(UfInicio)) faltando.Add("UF de início");
+        if (!Formatos.UfValida(UfFim)) faltando.Add("UF de fim");
+        if (Percurso.Any(u => !Formatos.UfValida(u))) faltando.Add("UFs do percurso: use siglas válidas separadas por vírgula");
         if (Percurso.Contains(UfInicio) || Percurso.Contains(UfFim)) faltando.Add("UFs do percurso: não repita a UF de início nem a de fim");
         if (Percurso.Count > 25) faltando.Add("UFs do percurso: no máximo 25");
         if (InicioViagem is not null && InicioViagem.Value.Date < DataEmissao.Date) faltando.Add("Início da viagem não pode ser antes da emissão");
@@ -204,69 +177,23 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
     }
 
     /// <summary>
-    /// Pendências que não dependem dos cadastros. A conferência completa (com as UFs dos municípios) é feita
-    /// etapa por etapa no assistente.
+    /// Pendências que não dependem dos cadastros. A conferência das UFs dos municípios
+    /// (<see cref="ValidarCarregamentoDescarga"/>) é feita etapa por etapa no assistente.
     /// </summary>
     public override IReadOnlyList<string> ValidarObrigatorios() =>
         [.. ValidarIdentificacao(), .. ValidarVeiculos(), .. ValidarCargaSeguro()];
 
-    /// <summary>Texto da conferência (etapa 5), com os nomes lidos dos cadastros do banco.</summary>
-    /// <param name="cadastros">Cadastros da empresa.</param>
-    public string MontarResumo(CadastrosEmissao cadastros)
-    {
-        var texto = new StringBuilder();
-        texto.AppendLine("IDENTIFICAÇÃO");
-        texto.AppendLine($"  Emitente: {OpcoesCadastro.Texto(OpcoesCadastro.TiposEmitenteMdfe, TipoEmitente)}");
-        texto.AppendLine($"  Transportador: {(TipoTransportador is null ? "não informado" : OpcoesCadastro.Texto(OpcoesCadastro.TiposTransportador, TipoTransportador))}");
-        texto.AppendLine($"  Série: {cadastros.NumeroSerie(SerieId)}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
-        texto.AppendLine($"  Início da viagem: {(InicioViagem is null ? "não informado" : InicioViagem.Value.ToString("dd/MM/yyyy HH:mm", Brasil))}");
-        texto.AppendLine($"  Percurso: {PercursoDescricao}");
-        texto.AppendLine();
-        texto.AppendLine("CARREGAMENTO");
-        foreach (var codigo in MunicipiosCarregamento) texto.AppendLine($"  {cadastros.Municipio(codigo)}");
-        texto.AppendLine("DESCARGA");
-        foreach (var descarga in Descargas)
-        {
-            texto.AppendLine($"  {cadastros.Municipio(descarga.MunicipioCodigo)}");
-            foreach (var documento in descarga.Documentos) texto.AppendLine($"    {(documento.Tipo == TipoDocumentoMdfe.Cte ? "CT-e" : "NF-e")} {documento.ChaveDescricao}");
-        }
-
-        texto.AppendLine();
-        texto.AppendLine("VEÍCULOS E CONDUTORES");
-        texto.AppendLine($"  Tração: {cadastros.Placa(VeiculoTracaoId)}");
-        foreach (var id in ReboquesIds) texto.AppendLine($"  Reboque: {cadastros.Placa(id)}");
-        foreach (var id in CondutoresIds)
-        {
-            var motorista = cadastros.Motorista(id);
-            texto.AppendLine(motorista is null ? $"  Condutor: {CadastrosEmissao.NaoEncontrado}" : $"  Condutor: {motorista.Nome} ({Formatador.Cpf(motorista.Cpf)})");
-        }
-
-        foreach (var ciot in Ciots) texto.AppendLine($"  CIOT: {ciot.Ciot} (responsável {ciot.CpfCnpjResponsavel})");
-        if (Ciots.Count == 0) texto.AppendLine($"  CIOT: não informado{(ExigeCiot ? " (OBRIGATÓRIO)" : string.Empty)}");
-        texto.AppendLine();
-        texto.AppendLine("CARGA, SEGURO E TOTAIS");
-        texto.AppendLine($"  Produto: {OpcoesCadastro.Texto(OpcoesCadastro.TiposCargaMdfe, TipoCarga)} - {ProdutoPredominante}");
-        var apolice = cadastros.Apolice(ApoliceId);
-        var seguro = ApoliceId is null ? "não informado"
-            : apolice is null ? CadastrosEmissao.NaoEncontrado
-            : $"{apolice.NomeSeguradora}, apólice {apolice.NumeroApolice} ({OpcoesCadastro.Texto(OpcoesCadastro.ResponsaveisSeguro, apolice.Responsavel)})";
-        texto.AppendLine($"  Seguro: {seguro}");
-        foreach (var averbacao in Averbacoes) texto.AppendLine($"  Averbação: {averbacao}");
-        texto.AppendLine($"  CT-e: {QuantidadeCte}    NF-e: {QuantidadeNfe}");
-        texto.AppendLine($"  Valor da carga: {(ValorCarga ?? 0).ToString("C2", Brasil)}    Peso: {(PesoCarga ?? 0).ToString("N4", Brasil)} {OpcoesCadastro.Texto(OpcoesCadastro.UnidadesPesoMdfe, UnidadePeso)}");
-        return texto.ToString();
-    }
-
     /// <inheritdoc />
-    protected override void CopiarColecoes()
+    public override void CopiarItensDe(DocumentoFiscal origem)
     {
-        Percurso = [.. Percurso];
-        MunicipiosCarregamento = [.. MunicipiosCarregamento];
-        Descargas = Descargas.Select(d => d.Copiar()).ToList();
-        ReboquesIds = [.. ReboquesIds];
-        CondutoresIds = [.. CondutoresIds];
-        Ciots = Ciots.Select(c => c.Copiar()).ToList();
-        Averbacoes = [.. Averbacoes];
+        var mdfe = (ManifestoEletronico)origem;
+        Percurso = [.. mdfe.Percurso];
+        MunicipiosCarregamento = [.. mdfe.MunicipiosCarregamento];
+        Descargas = mdfe.Descargas.Select(d => d.Copiar()).ToList();
+        ReboquesIds = [.. mdfe.ReboquesIds];
+        CondutoresIds = [.. mdfe.CondutoresIds];
+        Ciots = mdfe.Ciots.Select(c => c.Copiar()).ToList();
+        Averbacoes = [.. mdfe.Averbacoes];
     }
 
     [GeneratedRegex("^[0-9]{44}$")]
@@ -274,4 +201,50 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
 
     [GeneratedRegex("^[0-9]{12}$")]
     private static partial Regex CiotValido();
+}
+
+/// <summary>Documento transportado, vinculado a um município de descarga.</summary>
+public class DocumentoMdfe
+{
+    /// <summary>Tipo do documento.</summary>
+    public TipoDocumentoMdfe Tipo { get; set; } = TipoDocumentoMdfe.Cte;
+
+    /// <summary>Chave de acesso com 44 dígitos (<c>chCTe</c> ou <c>chNFe</c>).</summary>
+    public string Chave { get; set; } = string.Empty;
+
+    /// <summary>
+    /// CT-e emitido por este sistema, quando o documento foi escolhido na lista de CT-e. Enquanto não há transmissão
+    /// esses CT-e não têm chave; depois da P4c só CT-e autorizados poderão ser vinculados.
+    /// </summary>
+    public int? CteId { get; set; }
+
+    /// <summary>Cópia independente.</summary>
+    public DocumentoMdfe Copiar() => new() { Tipo = Tipo, Chave = Chave, CteId = CteId };
+}
+
+/// <summary>Município de descarga (<c>infDoc/infMunDescarga</c>) com seus documentos.</summary>
+public class DescargaMdfe
+{
+    /// <summary>Código IBGE do município (<c>cMunDescarga</c>).</summary>
+    public int MunicipioCodigo { get; set; }
+
+    /// <summary>Documentos descarregados neste município.</summary>
+    public List<DocumentoMdfe> Documentos { get; set; } = [];
+
+    /// <summary>Cópia independente, incluindo os documentos.</summary>
+    public DescargaMdfe Copiar() =>
+        new() { MunicipioCodigo = MunicipioCodigo, Documentos = Documentos.Select(d => d.Copiar()).ToList() };
+}
+
+/// <summary>CIOT da viagem (<c>infANTT/infCIOT</c>).</summary>
+public class CiotMdfe
+{
+    /// <summary>Código do CIOT com 12 dígitos (tipo <c>TCIOT</c>).</summary>
+    public string Ciot { get; set; } = string.Empty;
+
+    /// <summary>CPF ou CNPJ do responsável pela geração do CIOT.</summary>
+    public string CpfCnpjResponsavel { get; set; } = string.Empty;
+
+    /// <summary>Cópia independente.</summary>
+    public CiotMdfe Copiar() => new() { Ciot = Ciot, CpfCnpjResponsavel = CpfCnpjResponsavel };
 }
