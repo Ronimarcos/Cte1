@@ -27,15 +27,15 @@ function Gerar([string]$pastaSchemas, [string]$saidaRelativa, [string]$namespace
     }
 }
 
-# CT-e 4.00 (NT 2026.005): documento e modal rodoviário (o modal vai em infModal como XML à parte).
+# CT-e 4.00 (NT 2026.005): documento, modal rodoviário (vai em infModal como XML à parte) e status do serviço.
 Gerar 'schemas/cte/PL_CTe_400_NT2026.005' 'src/Emissor.DFe/Leiaute/Cte' `
     'http://www.portalfiscal.inf.br/cte' 'Emissor.DFe.Leiaute.Cte' 'Emissor.DFe.Leiaute.Assinatura' `
-    @('cte_v4.00.xsd', 'cteModalRodoviario_v4.00.xsd')
+    @('cte_v4.00.xsd', 'cteModalRodoviario_v4.00.xsd', 'consStatServCTe_v4.00.xsd', 'retConsStatServCTe_v4.00.xsd')
 
-# MDF-e 3.00b: documento e modal rodoviário. A assinatura fica num namespace próprio, para não repetir as classes
+# MDF-e 3.00b: documento, modal rodoviário e status do serviço. A assinatura fica num namespace próprio, para não repetir as classes
 # geradas para o CT-e (cada pacote traz a sua cópia do xmldsig-core-schema).
 Gerar 'schemas/mdfe/PL_MDFe_300b_NT2025.001_1.05' 'src/Emissor.DFe/Leiaute/Mdfe' `
     'http://www.portalfiscal.inf.br/mdfe' 'Emissor.DFe.Leiaute.Mdfe' 'Emissor.DFe.Leiaute.Mdfe.Assinatura' `
-    @('mdfe_v3.00.xsd', 'mdfeModalRodoviario_v3.00.xsd')
+    @('mdfe_v3.00.xsd', 'mdfeModalRodoviario_v3.00.xsd', 'consStatServMDFe_v3.00.xsd', 'retConsStatServMDFe_v3.00.xsd')
 
 Write-Host 'Classes geradas.'

@@ -22,6 +22,12 @@ public static class ValidadorXsd
     /// <summary>Schema do modal rodoviário do MDF-e (validado à parte: <c>infModal</c> aceita qualquer conteúdo).</summary>
     public const string SchemaMdfeRodoviario = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\mdfeModalRodoviario_v3.00.xsd";
 
+    /// <summary>Consulta de status do serviço do CT-e.</summary>
+    public const string SchemaConsStatServCte = @"schemas\cte\PL_CTe_400_NT2026.005\consStatServCTe_v4.00.xsd";
+
+    /// <summary>Consulta de status do serviço do MDF-e.</summary>
+    public const string SchemaConsStatServMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\consStatServMDFe_v3.00.xsd";
+
     private static readonly ConcurrentDictionary<string, XmlSchemaSet> Conjuntos = new();
 
     /// <summary>Valida o elemento contra o schema e devolve os erros com o caminho do campo; vazio se válido.</summary>
