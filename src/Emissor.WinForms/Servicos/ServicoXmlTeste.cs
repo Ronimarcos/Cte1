@@ -28,7 +28,7 @@ public sealed class ServicoXmlTeste
     {
         var serie = cadastros.Serie(cte.SerieId)
             ?? throw new RegraNegocioException("O CT-e não tem série, ou a série não existe mais.");
-        var certificado = await CertificadoValidoAsync(cadastros.Empresa);
+        var certificado = await CertificadoValidoAsync(_servicos, cadastros.Empresa);
         var dados = new DadosEmissaoCte(
             cte,
             cadastros.Empresa,
@@ -56,7 +56,7 @@ public sealed class ServicoXmlTeste
     {
         var serie = cadastros.Serie(mdfe.SerieId)
             ?? throw new RegraNegocioException("O MDF-e não tem série, ou a série não existe mais.");
-        var certificado = await CertificadoValidoAsync(cadastros.Empresa);
+        var certificado = await CertificadoValidoAsync(_servicos, cadastros.Empresa);
         var dados = new DadosEmissaoMdfe(
             mdfe,
             cadastros.Empresa,
@@ -80,9 +80,11 @@ public sealed class ServicoXmlTeste
     }
 
     /// <summary>Certificado da empresa dentro da validade; o de vencimento mais distante, se houver mais de um.</summary>
-    private async Task<CertificadoDigital> CertificadoValidoAsync(Empresa empresa)
+    /// <param name="servicos">Cadastros e certificados.</param>
+    /// <param name="empresa">Empresa ativa.</param>
+    internal static async Task<CertificadoDigital> CertificadoValidoAsync(ServicosCadastro servicos, Empresa empresa)
     {
-        var certificados = await _servicos.Certificados.ListarAsync(empresa.Id);
+        var certificados = await servicos.Certificados.ListarAsync(empresa.Id);
         return certificados
             .Where(c => c.SituacaoEm(DateTime.Today) is SituacaoCertificado.Valido or SituacaoCertificado.VencendoEmBreve)
             .OrderByDescending(c => c.ValidoAte)

@@ -47,6 +47,7 @@ partial class FormPrincipal
         mnuMdfeEmitir = new ToolStripMenuItem();
         mnuMdfeConsultar = new ToolStripMenuItem();
         mnuSistema = new ToolStripMenuItem();
+        mnuSistemaStatusSefaz = new ToolStripMenuItem();
         mnuSistemaTrocarEmpresa = new ToolStripMenuItem();
         mnuSistemaSeparador1 = new ToolStripSeparator();
         mnuSistemaSair = new ToolStripMenuItem();
@@ -195,10 +196,17 @@ partial class FormPrincipal
         //
         // mnuSistema
         //
-        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaTrocarEmpresa, mnuSistemaSeparador1, mnuSistemaSair });
+        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaStatusSefaz, mnuSistemaTrocarEmpresa, mnuSistemaSeparador1, mnuSistemaSair });
         mnuSistema.Name = "mnuSistema";
         mnuSistema.Size = new Size(60, 20);
         mnuSistema.Text = "&Sistema";
+        //
+        // mnuSistemaStatusSefaz
+        //
+        mnuSistemaStatusSefaz.Name = "mnuSistemaStatusSefaz";
+        mnuSistemaStatusSefaz.Size = new Size(250, 22);
+        mnuSistemaStatusSefaz.Text = "Status da SEFA&Z (homologação)";
+        mnuSistemaStatusSefaz.Click += mnuSistemaStatusSefaz_Click;
         //
         // mnuSistemaTrocarEmpresa
         //
@@ -292,6 +300,7 @@ partial class FormPrincipal
     private ToolStripMenuItem mnuMdfeEmitir;
     private ToolStripMenuItem mnuMdfeConsultar;
     private ToolStripMenuItem mnuSistema;
+    private ToolStripMenuItem mnuSistemaStatusSefaz;
     private ToolStripMenuItem mnuSistemaTrocarEmpresa;
     private ToolStripSeparator mnuSistemaSeparador1;
     private ToolStripMenuItem mnuSistemaSair;

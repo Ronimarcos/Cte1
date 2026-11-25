@@ -1,5 +1,6 @@
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Formularios.Cte;
 using Emissor.WinForms.Formularios.Mdfe;
@@ -227,6 +228,40 @@ public partial class FormPrincipal : Form
     private async void mnuSistemaTrocarEmpresa_Click(object? sender, EventArgs e) => await TrocarEmpresaAsync();
 
     private void mnuSistemaSair_Click(object? sender, EventArgs e) => Close();
+
+    private async void mnuSistemaStatusSefaz_Click(object? sender, EventArgs e) => await ConsultarStatusSefazAsync();
+
+    /// <summary>Consulta o status do serviço do CT-e e do MDF-e em homologação, com o certificado da empresa ativa.</summary>
+    private async Task ConsultarStatusSefazAsync()
+    {
+        const string titulo = "Status da SEFAZ (homologação)";
+        UseWaitCursor = true;
+        mnuSistemaStatusSefaz.Enabled = false;
+        try
+        {
+            var resultados = await new ServicoSefaz(_servicos, _municipios).ConsultarStatusAsync(_empresa);
+            UseWaitCursor = false;
+            var todosEmOperacao = resultados.All(r => r.Status?.EmOperacao == true);
+            MessageBox.Show(this, string.Join(Environment.NewLine + Environment.NewLine, resultados.Select(r => r.Descricao)), titulo,
+                MessageBoxButtons.OK, todosEmOperacao ? MessageBoxIcon.Information : MessageBoxIcon.Warning);
+        }
+        catch (RegraNegocioException erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, $"Não foi possível consultar a SEFAZ.{Environment.NewLine}{erro.GetBaseException().Message}",
+                titulo, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            mnuSistemaStatusSefaz.Enabled = true;
+        }
+    }
 
     /// <summary>Abre a tela provisória ou, se já estiver aberta, apenas a traz para frente.</summary>
     private void AbrirTelaEmConstrucao(string titulo)

@@ -92,4 +92,8 @@ Preferências do responsável pelo projeto:
     - [x] P4b1: motor DF-e offline do CT-e (classes do XSD, chave, XML, assinatura, validação; "Gerar XML de teste").
     - [x] P4b2: motor DF-e offline do MDF-e (classes do XSD, XML, assinatura, validação; IE/UF do proprietário).
     - [ ] P4c: transmissão em homologação e numeração da série.
+      - [x] P4c0: webservices de homologação conferidos nas tabelas oficiais (`docs/LEVANTAMENTO.md` §8.3).
+      - [x] P4c1: confiança ICP-Brasil, cliente SOAP com certificado e status do serviço (falta teste real com certificado da empresa).
+      - [ ] P4c2: autorização do CT-e em homologação.
+      - [ ] P4c3: autorização do MDF-e em homologação.
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).
