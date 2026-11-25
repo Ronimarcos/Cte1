@@ -3,41 +3,15 @@ using Emissor.Dominio.Enums;
 namespace Emissor.WinForms.Prototipo;
 
 /// <summary>
-/// Dados inventados que ainda ficam em memória: os certificados (até a fatia P3) e os documentos CT-e e MDF-e de
-/// exemplo (até a fatia P4). Os cadastros estão no banco desde as fatias P2a e P2b. Os documentos apontam para os
-/// códigos dos dados de demonstração do banco (participante 1, veículo 1, série 1...).
+/// Documentos CT-e e MDF-e de exemplo, que ainda ficam em memória até a fatia P4 (todos os cadastros já estão no
+/// banco). Os documentos apontam para os códigos dos dados de demonstração do banco (participante 1, veículo 1,
+/// série 1...).
 /// </summary>
 internal static class DadosFicticios
 {
     /// <summary>
-    /// Certificados de todas as empresas. As datas são relativas a hoje para mostrar as três situações
-    /// (válido, vencendo em breve e vencido). Não há arquivo .pfx real: o caminho é só ilustrativo.
-    /// </summary>
-    public static RepositorioMemoria<CertificadoPrototipo> Certificados { get; } = new(
-    [
-        new()
-        {
-            EmpresaId = 1, Tipo = TipoCertificado.A1, CaminhoArquivo = @"C:\Certificados\alfa-exemplo.pfx",
-            Titular = "TRANSPORTADORA EXEMPLO ALFA LTDA", CnpjTitular = "11.111.111/0001-11",
-            ValidoDe = DateTime.Today.AddDays(-65), ValidoAte = DateTime.Today.AddDays(300),
-        },
-        new()
-        {
-            EmpresaId = 1, Tipo = TipoCertificado.A3, Thumbprint = "0123456789ABCDEF0123456789ABCDEF01234567",
-            Titular = "TRANSPORTADORA EXEMPLO ALFA LTDA", CnpjTitular = "11.111.111/0001-11",
-            ValidoDe = DateTime.Today.AddDays(-715), ValidoAte = DateTime.Today.AddDays(15),
-        },
-        new()
-        {
-            EmpresaId = 2, Tipo = TipoCertificado.A1, CaminhoArquivo = @"C:\Certificados\beta-exemplo.pfx",
-            Titular = "TRANSPORTADORA EXEMPLO BETA LTDA", CnpjTitular = "22.222.222/0001-22",
-            ValidoDe = DateTime.Today.AddDays(-375), ValidoAte = DateTime.Today.AddDays(-10),
-        },
-    ]);
-
-    /// <summary>
-    /// CT-e da empresa 1 para a consulta. Os participantes e a série são os da lista acima, pelo <c>Id</c> gerado
-    /// na ordem de inclusão. As chaves são fictícias (dígito verificador não calculado).
+    /// CT-e da empresa 1 para a consulta. Os participantes e a série são os dos dados de demonstração do banco,
+    /// pelos códigos fixos. As chaves são fictícias (dígito verificador não calculado).
     /// </summary>
     public static RepositorioMemoria<CtePrototipo> Ctes { get; } = new(
     [
@@ -78,8 +52,8 @@ internal static class DadosFicticios
     ]);
 
     /// <summary>
-    /// MDF-e da empresa 1 para a consulta. Veículos, motoristas, apólice, série e CT-e são os das listas acima,
-    /// pelo <c>Id</c> gerado na ordem de inclusão. O CIOT é fictício.
+    /// MDF-e da empresa 1 para a consulta. Veículos, motoristas, apólice e série são os dos dados de demonstração do
+    /// banco, pelos códigos fixos; o CT-e vinculado é o primeiro da lista acima. O CIOT é fictício.
     /// </summary>
     public static RepositorioMemoria<MdfePrototipo> Mdfes { get; } = new(
     [

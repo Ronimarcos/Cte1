@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Emissor.Dados;
 using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Regras;
 using Microsoft.EntityFrameworkCore;
 
 namespace Emissor.WinForms.Servicos;
@@ -57,10 +58,14 @@ public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
 /// <param name="Motoristas">Motoristas.</param>
 /// <param name="Apolices">Apólices de seguro.</param>
 /// <param name="Series">Séries de numeração.</param>
+/// <param name="Certificados">Certificados digitais.</param>
+/// <param name="Protetor">Criptografia do arquivo e da senha do certificado A1.</param>
 public sealed record ServicosCadastro(
     ServicoCadastro<Participante> Participantes,
     ServicoCadastro<Veiculo> Veiculos,
     ServicoCadastro<ProprietarioVeiculo> Proprietarios,
     ServicoCadastro<Motorista> Motoristas,
     ServicoCadastro<ApoliceSeguro> Apolices,
-    ServicoCadastro<SerieDocumento> Series);
+    ServicoCadastro<SerieDocumento> Series,
+    ServicoCadastro<CertificadoDigital> Certificados,
+    IProtetorSegredos Protetor);

@@ -1,5 +1,7 @@
 using Emissor.Dados;
+using Emissor.DFe.Certificados;
 using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Servicos;
@@ -70,6 +72,7 @@ static class Program
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
         servicos.AddSingleton(typeof(ServicoCadastro<>));
+        servicos.AddSingleton<IProtetorSegredos, ProtetorDpapi>();
         servicos.AddSingleton<ServicosCadastro>();
         return servicos.BuildServiceProvider();
     }

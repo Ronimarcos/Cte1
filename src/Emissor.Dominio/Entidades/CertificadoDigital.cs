@@ -82,6 +82,27 @@ public partial class CertificadoDigital : EntidadeDaEmpresa
         return faltando;
     }
 
+    /// <summary>
+    /// O certificado precisa ser da empresa: mesma raiz de CNPJ (8 primeiros caracteres, que matriz e filiais
+    /// compartilham) ou o mesmo CPF, quando o emitente é pessoa física. A SEFAZ recusa documento assinado com
+    /// certificado de outra raiz.
+    /// </summary>
+    /// <param name="empresa">Empresa emitente.</param>
+    public IReadOnlyList<string> ValidarTitular(Empresa empresa)
+    {
+        var doEmpresa = empresa.Documento;
+        var compativel = (CnpjTitular.Length, doEmpresa.Length) switch
+        {
+            (14, 14) => CnpjTitular[..8] == doEmpresa[..8],
+            (11, 11) => CnpjTitular == doEmpresa,
+            _ => false,
+        };
+
+        return compativel
+            ? []
+            : [$"O certificado é de outro titular (documento {CnpjTitular}); a empresa precisa de um certificado com a mesma raiz de CNPJ ({(doEmpresa.Length >= 8 ? doEmpresa[..8] : doEmpresa)})."];
+    }
+
     [GeneratedRegex("^[0-9A-F]{40}$")]
     private static partial Regex ThumbprintValido();
 }

@@ -111,7 +111,11 @@ internal abstract class FonteCadastroBanco<T, TLinha> : IFonteCadastro
     }
 
     /// <inheritdoc />
-    public Color? CorDaLinha(object registro) => null;
+    public Color? CorDaLinha(object registro) => registro is TLinha linha ? CorDoRegistro(linha) : null;
+
+    /// <summary>Cor de fundo da linha (ex.: certificado vencido); o padrão é não destacar.</summary>
+    /// <param name="linha">Linha da lista.</param>
+    protected virtual Color? CorDoRegistro(TLinha linha) => null;
 
     /// <summary>Monta as linhas da lista (pode consultar outros cadastros para os textos).</summary>
     /// <param name="registros">Registros da empresa.</param>
