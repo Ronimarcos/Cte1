@@ -72,6 +72,7 @@ static class Program
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
         servicos.AddSingleton(typeof(ServicoCadastro<>));
+        servicos.AddSingleton(typeof(ServicoDocumentos<>));
         servicos.AddSingleton<IProtetorSegredos, ProtetorDpapi>();
         servicos.AddSingleton<ServicosCadastro>();
         return servicos.BuildServiceProvider();
@@ -97,7 +98,7 @@ static class Program
         var resposta = MessageBox.Show(
             "Ainda não há empresas cadastradas." + Environment.NewLine + Environment.NewLine +
             "Deseja carregar os dados de demonstração (empresas fictícias ALFA, BETA e GAMA, com participantes," + Environment.NewLine +
-            "veículos, proprietários, motoristas, apólices e séries)?" + Environment.NewLine +
+            "veículos, proprietários, motoristas, apólices, séries e CT-e/MDF-e de exemplo)?" + Environment.NewLine +
             "Escolha \"Não\" para cadastrar a sua empresa agora.",
             "Emissor CT-e / MDF-e", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
@@ -116,20 +117,20 @@ static class Program
     }
 
     /// <summary>
-    /// Quem carregou a demonstração na fatia P2a tem só as empresas no banco: oferece completar com os demais
-    /// cadastros de demonstração. Recusar não impede de continuar.
+    /// Quem carregou a demonstração numa fatia anterior pode ter só as empresas, ou os cadastros sem os CT-e e
+    /// MDF-e de exemplo: oferece completar o que falta. Recusar não impede de continuar.
     /// </summary>
     private static bool CompletarDemonstracao(ServicoEmpresas empresas)
     {
-        var pendente = FormAguarde.Executar("Verificando os cadastros...", async () => (object)await empresas.CadastrosDemonstracaoPendentesAsync());
+        var pendente = FormAguarde.Executar("Verificando os cadastros...", async () => (object)await empresas.DemonstracaoIncompletaAsync());
         if (pendente is not true)
         {
             return pendente is not null;
         }
 
         var resposta = MessageBox.Show(
-            "O banco tem as empresas de demonstração, mas ainda não os demais cadastros." + Environment.NewLine + Environment.NewLine +
-            "Deseja carregar os participantes, veículos, proprietários, motoristas, apólices e séries de demonstração?",
+            "O banco tem os dados de demonstração, mas ainda falta uma parte deles." + Environment.NewLine + Environment.NewLine +
+            "Deseja completar com o que falta (cadastros de demonstração e CT-e/MDF-e de exemplo)?",
             "Emissor CT-e / MDF-e", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
         return resposta != DialogResult.Yes
             || FormAguarde.Executar("Carregando os dados de demonstração...", _ => empresas.CarregarDemonstracaoAsync());

@@ -16,7 +16,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     /// <summary>Valor da opção "(nenhum)" nas listas de reboque.</summary>
     private const int Nenhum = 0;
 
-    private BindingList<CiotPrototipo> _ciots = [];
+    private BindingList<CiotMdfe> _ciots = [];
     private List<Opcao<int>> _motoristas = [];
 
     /// <summary>Cria a etapa.</summary>
@@ -32,7 +32,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     public string Titulo => "3. Veículos, condutores e CIOT";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    void IEtapaMdfe.Carregar(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         var empresa = cadastros.Empresa;
         var veiculos = cadastros.Veiculos.OrderBy(v => v.Placa).ToList();
@@ -66,7 +66,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     }
 
     /// <summary>Explica se o CIOT é obrigatório para o tipo de emitente escolhido na etapa 1.</summary>
-    void IEtapaMdfe.AoEntrar(MdfePrototipo mdfe)
+    void IEtapaMdfe.AoEntrar(ManifestoEletronico mdfe)
     {
         grpCiot.Text = mdfe.ExigeCiot ? "CIOT * (obrigatório)" : "CIOT (opcional)";
         lblAvisoCiot.Text = mdfe.ExigeCiot
@@ -75,7 +75,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.Ler(MdfePrototipo mdfe)
+    void IEtapaMdfe.Ler(ManifestoEletronico mdfe)
     {
         dgvCiot.EndEdit();
         Validate();
@@ -87,7 +87,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
         mdfe.CondutoresIds = clbCondutores.CheckedItems.OfType<Opcao<int>>().Select(o => o.Valor).ToList();
         mdfe.Ciots = _ciots
             .Where(c => !string.IsNullOrWhiteSpace(c.Ciot) || !string.IsNullOrWhiteSpace(c.CpfCnpjResponsavel))
-            .Select(c => new CiotPrototipo
+            .Select(c => new CiotMdfe
             {
                 Ciot = new string(c.Ciot.Where(char.IsDigit).ToArray()),
                 CpfCnpjResponsavel = c.CpfCnpjResponsavel.Trim(),
@@ -96,7 +96,7 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) => mdfe.ValidarVeiculos();
+    IReadOnlyList<string> IEtapaMdfe.Validar(ManifestoEletronico mdfe) => mdfe.ValidarVeiculos();
 
     private void dgvCiot_DataError(object? sender, DataGridViewDataErrorEventArgs e) => e.ThrowException = false;
 
@@ -113,14 +113,14 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
         dgvCiot.AutoGenerateColumns = false;
         dgvCiot.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(CiotPrototipo.Ciot),
+            DataPropertyName = nameof(CiotMdfe.Ciot),
             HeaderText = "CIOT (12 dígitos)",
             MaxInputLength = 12,
             FillWeight = 45,
         });
         dgvCiot.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(CiotPrototipo.CpfCnpjResponsavel),
+            DataPropertyName = nameof(CiotMdfe.CpfCnpjResponsavel),
             HeaderText = "CPF/CNPJ do responsável pelo CIOT",
             MaxInputLength = 18,
             FillWeight = 55,

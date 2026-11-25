@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using System.Globalization;
 using Emissor.WinForms.Prototipo;
@@ -12,7 +14,7 @@ namespace Emissor.WinForms.Formularios.Cte;
 public partial class UcCteValores : UserControl, IEtapaCte
 {
     private static readonly CultureInfo Brasil = CultureInfo.GetCultureInfo("pt-BR");
-    private BindingList<ComponenteFretePrototipo> _componentes = [];
+    private BindingList<ComponenteFrete> _componentes = [];
 
     /// <summary>Cria a etapa.</summary>
     public UcCteValores()
@@ -27,7 +29,7 @@ public partial class UcCteValores : UserControl, IEtapaCte
     public string Titulo => "4. Valores e impostos";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
+    void IEtapaCte.Carregar(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         _componentes = new(cte.Componentes.Select(c => c.Copiar()).ToList());
         _componentes.ListChanged += (_, _) => AtualizarTotal();
@@ -37,24 +39,24 @@ public partial class UcCteValores : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    void IEtapaCte.AoEntrar(CtePrototipo cte)
+    void IEtapaCte.AoEntrar(ConhecimentoTransporte cte)
     {
     }
 
     /// <inheritdoc />
-    void IEtapaCte.Ler(CtePrototipo cte)
+    void IEtapaCte.Ler(ConhecimentoTransporte cte)
     {
         dgvComponentes.EndEdit();
         Validate();
         cte.Componentes = _componentes
             .Where(c => c.Valor != 0 || !string.IsNullOrWhiteSpace(c.Nome))
-            .Select(c => new ComponenteFretePrototipo { Nome = c.Nome.Trim(), Valor = c.Valor })
+            .Select(c => new ComponenteFrete { Nome = c.Nome.Trim(), Valor = c.Valor })
             .ToList();
         cte.ValorReceber = nudValorReceber.Value;
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => cte.ValidarValores();
+    IReadOnlyList<string> IEtapaCte.Validar(ConhecimentoTransporte cte) => cte.ValidarValores();
 
     private void btnReceberTotal_Click(object? sender, EventArgs e) => nudValorReceber.Value = Total();
 
@@ -75,14 +77,14 @@ public partial class UcCteValores : UserControl, IEtapaCte
         dgvComponentes.AutoGenerateColumns = false;
         dgvComponentes.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(ComponenteFretePrototipo.Nome),
+            DataPropertyName = nameof(ComponenteFrete.Nome),
             HeaderText = "Componente (ex.: FRETE PESO, PEDAGIO)",
             MaxInputLength = 15,
             FillWeight = 65,
         });
         dgvComponentes.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(ComponenteFretePrototipo.Valor),
+            DataPropertyName = nameof(ComponenteFrete.Valor),
             HeaderText = "Valor (R$)",
             DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
             FillWeight = 35,

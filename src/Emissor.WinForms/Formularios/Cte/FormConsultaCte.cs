@@ -1,3 +1,6 @@
+using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -8,9 +11,9 @@ namespace Emissor.WinForms.Formularios.Cte;
 internal sealed class LinhaCte
 {
     /// <summary>Monta a linha do CT-e.</summary>
-    /// <param name="cte">CT-e (ainda em memória até a fatia P4).</param>
+    /// <param name="cte">CT-e (lido do banco).</param>
     /// <param name="cadastros">Cadastros da empresa.</param>
-    public LinhaCte(CtePrototipo cte, CadastrosEmissao cadastros)
+    public LinhaCte(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         Id = cte.Id;
         Situacao = cte.Situacao;
@@ -30,7 +33,7 @@ internal sealed class LinhaCte
     public int Id { get; }
 
     /// <summary>Situação (para a cor e o botão Excluir).</summary>
-    public SituacaoCte Situacao { get; }
+    public SituacaoDocumento Situacao { get; }
 
     /// <summary>Número.</summary>
     public string NumeroDescricao { get; }
@@ -73,6 +76,8 @@ public partial class FormConsultaCte : Form
     private readonly Func<Task<CadastrosEmissao>> _carregarCadastros;
     private CadastrosEmissao _cadastros;
     private bool _ocupado;
+    private bool _carregado;
+    private int _versao;
 
     /// <summary>Cria a consulta para a empresa ativa.</summary>
     /// <param name="cadastros">Cadastros da empresa, já lidos do banco.</param>
@@ -87,31 +92,57 @@ public partial class FormConsultaCte : Form
         cboSituacao.SelectedIndex = 0;
         dtpDe.Value = DateTime.Today.AddDays(-30);
         dtpAte.Value = DateTime.Today;
-        Recarregar();
+        Load += async (_, _) =>
+        {
+            _carregado = true;
+            await RecarregarAsync();
+        };
     }
 
     /// <summary>Opções do filtro de situação; -1 = todas.</summary>
     private static IReadOnlyList<Opcao<int>> OpcoesSituacao { get; } =
     [
         new(-1, "Todas"),
-        new((int)SituacaoCte.EmDigitacao, "Em digitação"),
-        new((int)SituacaoCte.ProntoParaTransmitir, "Pronto para transmitir"),
+        new((int)SituacaoDocumento.EmDigitacao, "Em digitação"),
+        new((int)SituacaoDocumento.ProntoParaTransmitir, "Pronto para transmitir"),
     ];
 
     /// <summary>Recarrega a grade com os filtros atuais e posiciona no CT-e indicado (ou no selecionado).</summary>
     /// <param name="idSelecionar">CT-e a selecionar após recarregar.</param>
-    internal void Recarregar(int? idSelecionar = null)
+    internal async Task RecarregarAsync(int? idSelecionar = null)
     {
+        if (!_carregado)
+        {
+            return;
+        }
+
+        var versao = ++_versao;
         idSelecionar ??= Selecionado?.Id;
         var de = dtpDe.Value.Date;
         var ate = dtpAte.Value.Date;
         var situacao = cboSituacao.ValorSelecionado<int>() ?? -1;
         var termo = txtPesquisa.Text.Trim();
 
-        var lista = DadosFicticios.Ctes
-            .Listar(c => c.EmpresaId == _cadastros.Empresa.Id
-                && c.DataEmissao.Date >= de && c.DataEmissao.Date <= ate
-                && (situacao < 0 || (int)c.Situacao == situacao))
+        IReadOnlyList<ConhecimentoTransporte> documentos;
+        try
+        {
+            documentos = await _cadastros.Ctes.ListarAsync(_cadastros.Empresa.Id, de, ate,
+                situacao < 0 ? null : (SituacaoDocumento)situacao);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler os CT-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        // Filtros alterados durante a leitura: vale só a leitura mais recente.
+        if (versao != _versao || IsDisposed)
+        {
+            return;
+        }
+
+        var lista = documentos
             .Select(c => new LinhaCte(c, _cadastros))
             .Where(l => termo.Length == 0 || l.TextoPesquisa.Contains(termo, StringComparison.CurrentCultureIgnoreCase))
             .OrderByDescending(l => l.DataEmissao)
@@ -161,13 +192,13 @@ public partial class FormConsultaCte : Form
         }
     }
 
-    private void Filtro_Alterado(object? sender, EventArgs e) => Recarregar();
+    private async void Filtro_Alterado(object? sender, EventArgs e) => await RecarregarAsync();
 
     private async void btnNovo_Click(object? sender, EventArgs e) => await NovoAsync();
 
     private async void btnAbrir_Click(object? sender, EventArgs e) => await AbrirSelecionadoAsync();
 
-    private void btnExcluir_Click(object? sender, EventArgs e) => ExcluirSelecionado();
+    private async void btnExcluir_Click(object? sender, EventArgs e) => await ExcluirSelecionadoAsync();
 
     private void btnFechar_Click(object? sender, EventArgs e) => Close();
 
@@ -191,7 +222,7 @@ public partial class FormConsultaCte : Form
         else if (e.KeyCode == Keys.Delete)
         {
             e.Handled = true;
-            ExcluirSelecionado();
+            await ExcluirSelecionadoAsync();
         }
     }
 
@@ -199,7 +230,7 @@ public partial class FormConsultaCte : Form
     private void dgvCtes_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
     {
         if (e.RowIndex >= 0 && e.CellStyle is not null
-            && dgvCtes.Rows[e.RowIndex].DataBoundItem is LinhaCte { Situacao: SituacaoCte.ProntoParaTransmitir })
+            && dgvCtes.Rows[e.RowIndex].DataBoundItem is LinhaCte { Situacao: SituacaoDocumento.ProntoParaTransmitir })
         {
             e.CellStyle.BackColor = Color.Honeydew;
         }
@@ -211,18 +242,43 @@ public partial class FormConsultaCte : Form
     {
         var cte = Selecionado;
         btnAbrir.Enabled = cte is not null;
-        btnExcluir.Enabled = cte is { Situacao: SituacaoCte.EmDigitacao };
+        btnExcluir.Enabled = cte is { Situacao: SituacaoDocumento.EmDigitacao };
     }
 
-    private Task NovoAsync() => AbrirAssistenteAsync(new CtePrototipo { EmpresaId = _cadastros.Empresa.Id });
+    private Task NovoAsync() => AbrirAssistenteAsync(new ConhecimentoTransporte { EmpresaId = _cadastros.Empresa.Id });
 
-    private Task AbrirSelecionadoAsync() =>
-        Selecionado is { } atual && DadosFicticios.Ctes.ObterPorId(atual.Id) is { } copia
-            ? AbrirAssistenteAsync(copia)
-            : Task.CompletedTask;
+    /// <summary>Lê do banco o CT-e selecionado, com os itens, e abre o assistente.</summary>
+    private async Task AbrirSelecionadoAsync()
+    {
+        if (Selecionado is not { } atual || _ocupado)
+        {
+            return;
+        }
+
+        ConhecimentoTransporte? copia;
+        try
+        {
+            copia = await _cadastros.Ctes.ObterAsync(atual.Id);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler o CT-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        if (copia is null)
+        {
+            MessageBox.Show(this, "O CT-e não existe mais. A lista será atualizada.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            await RecarregarAsync();
+            return;
+        }
+
+        await AbrirAssistenteAsync(copia);
+    }
 
     /// <summary>Relê os cadastros do banco e abre o assistente; ao salvar, atualiza a lista.</summary>
-    private async Task AbrirAssistenteAsync(CtePrototipo cte)
+    private async Task AbrirAssistenteAsync(ConhecimentoTransporte cte)
     {
         if (_ocupado)
         {
@@ -236,11 +292,11 @@ public partial class FormConsultaCte : Form
             using var tela = new FormEmissaoCte(cte, _cadastros);
             if (tela.ShowDialog(this) == DialogResult.OK)
             {
-                Recarregar(cte.Id);
+                await RecarregarAsync(cte.Id);
             }
             else
             {
-                Recarregar();
+                await RecarregarAsync();
             }
         }
         catch (Exception erro)
@@ -254,14 +310,14 @@ public partial class FormConsultaCte : Form
         }
     }
 
-    private void ExcluirSelecionado()
+    private async Task ExcluirSelecionadoAsync()
     {
         if (Selecionado is not { } cte)
         {
             return;
         }
 
-        if (cte.Situacao != SituacaoCte.EmDigitacao)
+        if (cte.Situacao != SituacaoDocumento.EmDigitacao)
         {
             MessageBox.Show(this, "Só CT-e em digitação podem ser excluídos.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
@@ -271,8 +327,21 @@ public partial class FormConsultaCte : Form
             Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (resposta == DialogResult.Yes)
         {
-            DadosFicticios.Ctes.Excluir(cte.Id);
-            Recarregar();
+            try
+            {
+                await _cadastros.Ctes.ExcluirAsync(cte.Id);
+            }
+            catch (RegraNegocioException erro)
+            {
+                MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            catch (Exception erro)
+            {
+                MessageBox.Show(this, $"Não foi possível excluir o CT-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                    Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            await RecarregarAsync();
         }
     }
 

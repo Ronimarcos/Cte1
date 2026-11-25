@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -21,22 +23,22 @@ public partial class UcMdfeConferencia : UserControl, IEtapaMdfe
     public string Titulo => "5. Conferência";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    void IEtapaMdfe.Carregar(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         txtInformacoes.Text = mdfe.InformacoesComplementares;
     }
 
     /// <summary>Monta o resumo com o que foi preenchido nas etapas anteriores.</summary>
-    void IEtapaMdfe.AoEntrar(MdfePrototipo mdfe)
+    void IEtapaMdfe.AoEntrar(ManifestoEletronico mdfe)
     {
         txtResumo.Text = _cadastros is null ? string.Empty : mdfe.MontarResumo(_cadastros);
         txtResumo.Select(0, 0);
     }
 
     /// <inheritdoc />
-    void IEtapaMdfe.Ler(MdfePrototipo mdfe) => mdfe.InformacoesComplementares = txtInformacoes.Text.Trim();
+    void IEtapaMdfe.Ler(ManifestoEletronico mdfe) => mdfe.InformacoesComplementares = txtInformacoes.Text.Trim();
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) => [];
+    IReadOnlyList<string> IEtapaMdfe.Validar(ManifestoEletronico mdfe) => [];
 }

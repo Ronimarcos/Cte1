@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -21,14 +23,14 @@ public partial class UcCteConferencia : UserControl, IEtapaCte
     public string Titulo => "5. Conferência";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
+    void IEtapaCte.Carregar(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         _cadastros = cadastros;
         txtObservacoes.Text = cte.Observacoes;
     }
 
     /// <summary>Monta o resumo com o que foi preenchido nas etapas anteriores.</summary>
-    void IEtapaCte.AoEntrar(CtePrototipo cte)
+    void IEtapaCte.AoEntrar(ConhecimentoTransporte cte)
     {
         txtResumo.Text = _cadastros is null ? string.Empty : cte.MontarResumo(_cadastros);
 
@@ -37,8 +39,8 @@ public partial class UcCteConferencia : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    void IEtapaCte.Ler(CtePrototipo cte) => cte.Observacoes = txtObservacoes.Text.Trim();
+    void IEtapaCte.Ler(ConhecimentoTransporte cte) => cte.Observacoes = txtObservacoes.Text.Trim();
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => [];
+    IReadOnlyList<string> IEtapaCte.Validar(ConhecimentoTransporte cte) => [];
 }

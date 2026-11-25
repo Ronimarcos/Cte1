@@ -43,6 +43,12 @@ public class EmissorDbContext : DbContext
     /// <summary>Apólices de seguro da carga.</summary>
     public DbSet<ApoliceSeguro> Apolices => Set<ApoliceSeguro>();
 
+    /// <summary>CT-e emitidos.</summary>
+    public DbSet<ConhecimentoTransporte> Ctes => Set<ConhecimentoTransporte>();
+
+    /// <summary>MDF-e emitidos.</summary>
+    public DbSet<ManifestoEletronico> Mdfes => Set<ManifestoEletronico>();
+
     /// <inheritdoc />
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

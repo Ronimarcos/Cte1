@@ -1,30 +1,35 @@
+using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
-using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
 /// <summary>
 /// Assistente de emissão do MDF-e em 5 etapas. Cada etapa valida o que é dela antes de avançar;
-/// "Concluir" confere tudo e grava o MDF-e como "Pronto para transmitir". O protótipo não transmite,
-/// não gera chave, protocolo nem DACTE.
+/// "Concluir" confere tudo e grava o MDF-e como "Pronto para transmitir". O documento fica gravado
+/// no banco; transmissão, chave, protocolo e DAMDFE entram com o motor DF-e (P4b e P4c).
 /// </summary>
 public partial class FormEmissaoMdfe : Form
 {
-    private readonly MdfePrototipo _mdfe;
+    private readonly ManifestoEletronico _mdfe;
+    private readonly CadastrosEmissao _cadastros;
     private readonly UserControl[] _telas;
     private readonly IEtapaMdfe[] _etapas;
     private int _atual;
     private bool _ajustandoLista;
     private bool _gravado;
+    private bool _gravando;
 
     /// <summary>Cria o assistente sobre a cópia do MDF-e.</summary>
     /// <param name="mdfe">Cópia editável do MDF-e (novo ou existente).</param>
     /// <param name="cadastros">Empresa emitente e cadastros lidos do banco ao abrir o assistente.</param>
-    internal FormEmissaoMdfe(MdfePrototipo mdfe, CadastrosEmissao cadastros)
+    internal FormEmissaoMdfe(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
     {
         InitializeComponent();
         _mdfe = mdfe;
+        _cadastros = cadastros;
         Text = mdfe.Id == 0
             ? $"Emitir MDF-e — {cadastros.Empresa.RazaoSocial}"
             : $"MDF-e de {mdfe.DataEmissao:dd/MM/yyyy} ({mdfe.SituacaoDescricao}) — {cadastros.Empresa.RazaoSocial}";
@@ -55,10 +60,10 @@ public partial class FormEmissaoMdfe : Form
                 Voltar();
                 return true;
             case Keys.Control | Keys.S:
-                SalvarRascunho();
+                _ = SalvarRascunhoAsync();
                 return true;
             case Keys.Control | Keys.Enter when btnConcluir.Visible:
-                Concluir();
+                _ = ConcluirAsync();
                 return true;
             case Keys.Escape when !EscPertenceAoControle():
                 Close();
@@ -98,9 +103,9 @@ public partial class FormEmissaoMdfe : Form
 
     private void btnVoltar_Click(object? sender, EventArgs e) => Voltar();
 
-    private void btnSalvarRascunho_Click(object? sender, EventArgs e) => SalvarRascunho();
+    private async void btnSalvarRascunho_Click(object? sender, EventArgs e) => await SalvarRascunhoAsync();
 
-    private void btnConcluir_Click(object? sender, EventArgs e) => Concluir();
+    private async void btnConcluir_Click(object? sender, EventArgs e) => await ConcluirAsync();
 
     private void btnCancelar_Click(object? sender, EventArgs e) => Close();
 
@@ -155,18 +160,21 @@ public partial class FormEmissaoMdfe : Form
     }
 
     /// <summary>Grava como está, sem exigir os campos obrigatórios.</summary>
-    private void SalvarRascunho()
+    private async Task SalvarRascunhoAsync()
     {
         _etapas[_atual].Ler(_mdfe);
-        _mdfe.Situacao = SituacaoMdfe.EmDigitacao;
-        Gravar();
+        if (!await GravarAsync(SituacaoDocumento.EmDigitacao))
+        {
+            return;
+        }
+
         MessageBox.Show(this, "Rascunho salvo. O MDF-e fica \"Em digitação\" na consulta.", Text,
             MessageBoxButtons.OK, MessageBoxIcon.Information);
         Close();
     }
 
     /// <summary>Confere todas as etapas; na primeira com pendência, avisa e mostra a etapa.</summary>
-    private void Concluir()
+    private async Task ConcluirAsync()
     {
         _etapas[_atual].Ler(_mdfe);
         for (var i = 0; i < _etapas.Length; i++)
@@ -186,28 +194,59 @@ public partial class FormEmissaoMdfe : Form
             }
         }
 
-        _mdfe.Situacao = SituacaoMdfe.ProntoParaTransmitir;
-        Gravar();
+        if (!await GravarAsync(SituacaoDocumento.ProntoParaTransmitir))
+        {
+            return;
+        }
+
         MessageBox.Show(this,
             "MDF-e conferido e salvo como \"Pronto para transmitir\".\n\nA transmissão para a SEFAZ (homologação) entra com a implementação do motor DF-e.",
             Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
         Close();
     }
 
-    /// <summary>Inclui ou altera o MDF-e no repositório em memória.</summary>
-    private void Gravar()
+    /// <summary>
+    /// Grava o MDF-e no banco com a situação informada. Se o banco recusar, mostra o motivo, devolve a situação
+    /// anterior e mantém o assistente aberto.
+    /// </summary>
+    /// <param name="situacao">Em digitação (rascunho) ou pronto para transmitir.</param>
+    /// <returns>Verdadeiro se gravou.</returns>
+    private async Task<bool> GravarAsync(SituacaoDocumento situacao)
     {
-        if (_mdfe.Id == 0)
+        if (_gravando)
         {
-            DadosFicticios.Mdfes.Incluir(_mdfe);
-        }
-        else
-        {
-            DadosFicticios.Mdfes.Alterar(_mdfe);
+            return false;
         }
 
-        _gravado = true;
-        DialogResult = DialogResult.OK;
+        var anterior = _mdfe.Situacao;
+        _mdfe.Situacao = situacao;
+        _gravando = true;
+        UseWaitCursor = true;
+        try
+        {
+            await _cadastros.Mdfes.SalvarAsync(_mdfe);
+            _gravado = true;
+            DialogResult = DialogResult.OK;
+            return true;
+        }
+        catch (RegraNegocioException erro)
+        {
+            _mdfe.Situacao = anterior;
+            AvisosCadastro.HaPendencias(this, Text, erro.Pendencias);
+            return false;
+        }
+        catch (Exception erro)
+        {
+            _mdfe.Situacao = anterior;
+            MessageBox.Show(this, $"Não foi possível gravar o MDF-e.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return false;
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            _gravando = false;
+        }
     }
 
     /// <summary>Exibe a etapa informada e ajusta título, lista e botões.</summary>

@@ -1,3 +1,5 @@
+using Emissor.Dominio.Enums;
+using Emissor.Dominio.Entidades;
 using System.ComponentModel;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
@@ -10,9 +12,9 @@ namespace Emissor.WinForms.Formularios.Cte;
 /// </summary>
 public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
 {
-    private BindingList<QuantidadeCargaPrototipo> _quantidades = [];
-    private BindingList<DocumentoNfePrototipo> _documentosNfe = [];
-    private BindingList<DocumentoAnteriorPrototipo> _documentosAnteriores = [];
+    private BindingList<QuantidadeCarga> _quantidades = [];
+    private BindingList<DocumentoNfeCte> _documentosNfe = [];
+    private BindingList<DocumentoAnteriorCte> _documentosAnteriores = [];
 
     /// <summary>Cria a etapa.</summary>
     public UcCteCargaDocumentos()
@@ -27,7 +29,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
     public string Titulo => "3. Carga e documentos";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
+    void IEtapaCte.Carregar(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
     {
         nudValorCarga.Value = cte.ValorCarga ?? 0;
         txtProdutoPredominante.Text = cte.ProdutoPredominante;
@@ -44,7 +46,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
     }
 
     /// <summary>Mostra só os grupos que valem para o tipo do CT-e e do serviço escolhidos na etapa 1.</summary>
-    void IEtapaCte.AoEntrar(CtePrototipo cte)
+    void IEtapaCte.AoEntrar(ConhecimentoTransporte cte)
     {
         grpComplemento.Visible = cte.EhComplemento;
         grpCarga.Visible = !cte.EhComplemento;
@@ -53,7 +55,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    void IEtapaCte.Ler(CtePrototipo cte)
+    void IEtapaCte.Ler(ConhecimentoTransporte cte)
     {
         FinalizarEdicao();
         cte.ValorCarga = nudValorCarga.Value;
@@ -68,11 +70,11 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
             .ToList();
         cte.DocumentosNfe = _documentosNfe
             .Where(d => !string.IsNullOrWhiteSpace(d.Chave))
-            .Select(d => new DocumentoNfePrototipo { Chave = SoDigitos(d.Chave) })
+            .Select(d => new DocumentoNfeCte { Chave = SoDigitos(d.Chave) })
             .ToList();
         cte.DocumentosAnteriores = _documentosAnteriores
             .Where(d => !string.IsNullOrWhiteSpace(d.CnpjCpfEmitente) || !string.IsNullOrWhiteSpace(d.NomeEmitente) || !string.IsNullOrWhiteSpace(d.ChaveCte))
-            .Select(d => new DocumentoAnteriorPrototipo
+            .Select(d => new DocumentoAnteriorCte
             {
                 CnpjCpfEmitente = d.CnpjCpfEmitente.Trim(),
                 NomeEmitente = d.NomeEmitente.Trim(),
@@ -88,7 +90,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => cte.ValidarCargaDocumentos();
+    IReadOnlyList<string> IEtapaCte.Validar(ConhecimentoTransporte cte) => cte.ValidarCargaDocumentos();
 
     private void btnImportarXml_Click(object? sender, EventArgs e) => AvisarIndisponivel("A importação do XML da NF-e");
 
@@ -122,7 +124,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
         dgvQuantidades.AutoGenerateColumns = false;
         dgvQuantidades.Columns.Add(new DataGridViewComboBoxColumn
         {
-            DataPropertyName = nameof(QuantidadeCargaPrototipo.Unidade),
+            DataPropertyName = nameof(QuantidadeCarga.Unidade),
             HeaderText = "Unidade",
             DataSource = OpcoesCadastro.UnidadesMedidaCarga.ToList(),
             ValueMember = nameof(Opcao<int>.Valor),
@@ -131,14 +133,14 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
         });
         dgvQuantidades.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(QuantidadeCargaPrototipo.TipoMedida),
+            DataPropertyName = nameof(QuantidadeCarga.TipoMedida),
             HeaderText = "Tipo da medida (ex.: PESO BRUTO)",
             MaxInputLength = 20,
             FillWeight = 45,
         });
         dgvQuantidades.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(QuantidadeCargaPrototipo.Quantidade),
+            DataPropertyName = nameof(QuantidadeCarga.Quantidade),
             HeaderText = "Quantidade",
             DefaultCellStyle = new DataGridViewCellStyle { Format = "N4", Alignment = DataGridViewContentAlignment.MiddleRight },
             FillWeight = 30,
@@ -147,7 +149,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
         dgvNfe.AutoGenerateColumns = false;
         dgvNfe.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(DocumentoNfePrototipo.Chave),
+            DataPropertyName = nameof(DocumentoNfeCte.Chave),
             HeaderText = "Chave de acesso da NF-e (44 dígitos)",
             MaxInputLength = 54,
         });
@@ -155,21 +157,21 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
         dgvDocumentosAnteriores.AutoGenerateColumns = false;
         dgvDocumentosAnteriores.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(DocumentoAnteriorPrototipo.CnpjCpfEmitente),
+            DataPropertyName = nameof(DocumentoAnteriorCte.CnpjCpfEmitente),
             HeaderText = "CNPJ/CPF do emitente",
             MaxInputLength = 18,
             FillWeight = 22,
         });
         dgvDocumentosAnteriores.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(DocumentoAnteriorPrototipo.NomeEmitente),
+            DataPropertyName = nameof(DocumentoAnteriorCte.NomeEmitente),
             HeaderText = "Emitente",
             MaxInputLength = 60,
             FillWeight = 33,
         });
         dgvDocumentosAnteriores.Columns.Add(new DataGridViewTextBoxColumn
         {
-            DataPropertyName = nameof(DocumentoAnteriorPrototipo.ChaveCte),
+            DataPropertyName = nameof(DocumentoAnteriorCte.ChaveCte),
             HeaderText = "Chave do CT-e anterior",
             MaxInputLength = 54,
             FillWeight = 45,
