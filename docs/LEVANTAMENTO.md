@@ -242,7 +242,9 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 1 | Definir seguradora/averbadora para a averbação automática | Roni |
 | 2 | Definir IPEF para geração automática de CIOT (fase futura) | Roni |
 | 3 | Substituir os dois PDFs do MOC CT-e salvos como texto | Roni |
-| 4 | Confirmar autorizador e SVC do CT-e para MT na tabela de webservices | Desenvolvimento |
+| 4 | ~~Confirmar autorizador e SVC do CT-e para MT na tabela de webservices~~ — encerrada em 25/11/2026 (§8.3): MT tem autorizador próprio; contingência na SVC-RS | Desenvolvimento |
+| 10 | Tornar confiável no Windows a cadeia ICP-Brasil dos servidores da SEFAZ (o navegador recusou `mdfe-homologacao.svrs.rs.gov.br` com ERR_CERT_AUTHORITY_INVALID); sem isso o emissor não conecta. Definir: instalar as raízes ICP-Brasil (TI) ou o app levar as raízes oficiais do ITI só para validar a SEFAZ | Roni / TI |
+| 11 | Obter o MOC do CT-e 4.00 e do MDF-e 3.00b (PDF original) ou os WSDL de homologação, para o formato SOAP dos webservices (namespaces, ação e elemento da mensagem); não escrever de memória | Roni |
 | 5 | Confirmar exigência de CSRT pela SEFAZ-MT | Desenvolvimento |
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
@@ -288,5 +290,40 @@ Referência de usabilidade vista (fluxo de emissão de outro emissor web), usada
 | P4a | CT-e e MDF-e gravados no banco (`ConhecimentoTransporte` e `ManifestoEletronico` no Dominio, com as regras por etapa e a obrigatoriedade do CIOT; base `DocumentoFiscal`). Situações "Em digitação" (grava incompleto) e "Pronto para transmitir" (grava só sem pendências). Itens em tabelas filhas (quantidades, NF-e, documentos anteriores, componentes, descargas com documentos, CIOT); percurso, municípios de carregamento, reboques, condutores e averbações em JSON na própria tabela (reboques e condutores sem chave estrangeira: a existência é conferida na montagem do XML, P4b). Série, participantes, municípios, veículo de tração, apólice e CT-e vinculado no MDF-e como chaves estrangeiras: cadastro ou CT-e usado em documento não pode ser excluído. Só rascunho pode ser excluído. Número **não** é reservado nesta fatia: sai da série, em transação, só na transmissão (P4c). Migração `DocumentosCteMdfe`; dados de demonstração com 3 CT-e e 2 MDF-e de exemplo (oferecidos também a quem já tinha os cadastros). Removidas as 8 classes de documento do protótipo | Concluída |
 | P4b1 | Motor DF-e offline do CT-e: classes geradas dos XSD do CT-e 4.00 (NT 2026.005) com `dotnet-xscgen` (`ferramentas/gerar-classes-dfe.ps1`, código gerado em `src/Emissor.DFe/Leiaute/Cte`, não editar à mão); chave de acesso com dígito verificador módulo 11 (CNPJ alfanumérico: valor ASCII − 48); montagem (`MontadorCte`) com os padrões tpImp 1, tpEmis 1, procEmi 0, retira 1, modal 01, cMunEnv do município da empresa, indIEToma do cadastro do tomador, RNTRC da empresa e ICMS do Simples Nacional (ICMSSN, CST 90, indSN 1; só CRT 1 nesta versão); assinatura XMLDSig enveloped com os algoritmos fixados no XSD (C14N, RSA-SHA1, SHA1) pela `IProvedorCertificado`; validação contra `cte_v4.00.xsd` e, à parte, contra `cteModalRodoviario_v4.00.xsd` (o `infModal` aceita qualquer conteúdo). Botão "Gerar XML de teste" na consulta de CT-e: sempre `tpAmb` 2, próximo número da série **sem reserva**, nada enviado à SEFAZ, XML salvo só onde o usuário escolher. Ficam fora: grupo IBS/CBS (pendência 9) e QR Code `infCTeSupl` (P4c), ambos opcionais no XSD | Concluída |
 | P4b2 | Motor DF-e offline do MDF-e 3.00b: classes geradas (`src/Emissor.DFe/Leiaute/Mdfe`, assinatura em namespace próprio), `MontadorMdfe` (identificação, emitente, descargas com CT-e/NF-e, seguro, produto predominante, totais, modal rodoviário com RNTRC, CIOT, tração, condutores, reboques e proprietário de veículo de terceiro), assinatura do `infMDFe` e validação contra `mdfe_v3.00.xsd` e `mdfeModalRodoviario_v3.00.xsd`. Partes comuns extraídas (`FormatacaoLeiaute`, `XmlGerado`). Proprietário ganhou IE e UF (migração `ProprietarioIeUf`). Botão "Gerar XML de teste" na consulta de MDF-e, com as mesmas regras do CT-e. CT-e emitido no sistema ainda não tem chave: vincular no MDF-e só depois da autorização (P4c); até lá é pendência. Ficam fora: QR Code (P4c), carga lotação `infLotacao` (regra a conferir na P4c), contratante e pagamento do frete (pendência 6) | Concluída |
-| P4c | Transmissão em homologação: status do serviço, autorização do CT-e e do MDF-e, número reservado da série na transmissão, `procCTe`/`procMDFe` guardados. Antes: conferir URLs e autorizador de MT na tabela oficial (pendência 4) | Pendente |
+| P4c0 | Conferência das tabelas oficiais de webservices (homologação), registrada no §8.3 | Concluída |
+| P4c1 | Comunicação SOAP com certificado e status do serviço do CT-e e do MDF-e | Bloqueada pelas pendências 10 e 11 |
+| P4c2 | Autorização do CT-e em homologação: número reservado da série, QR Code, retorno, `procCTe` guardado | Pendente |
+| P4c3 | Autorização do MDF-e em homologação, aceitando CT-e autorizados do sistema | Pendente |
 | P4d | Eventos em homologação: cancelamento, encerramento do MDF-e, inutilização e CC-e. DACTE e DAMDFE (QuestPDF) numa fatia P5 | Pendente |
+
+### 8.3 Webservices de homologação (conferidos em 25/11/2026)
+
+Fonte: tabela "Relação de Serviços Web" do portal nacional do CT-e em homologação (`hom.cte.fazenda.gov.br/portal/webServices.aspx`) e página "Serviços" do portal do MDF-e (`dfe-portal.svrs.rs.gov.br/Mdfe/Servicos`). Produção fica fora do emissor até haver confirmação explícita.
+
+**CT-e — autorizador MT (próprio).** Contingência: SVC-RS (o portal lista MT entre os estados da SVC-RS).
+
+| Serviço | Versão | URL (homologação) |
+|---|---|---|
+| CTeStatusServicoV4 | 4.00 | `https://homologacao.sefaz.mt.gov.br/ctews2/services/CTeStatusServicoV4` |
+| CTeConsultaV4 | 4.00 | `https://homologacao.sefaz.mt.gov.br/ctews2/services/CTeConsultaV4` |
+| CTeRecepcaoEventoV4 | 4.00 | `https://homologacao.sefaz.mt.gov.br/ctews2/services/CTeRecepcaoEventoV4` |
+| CTeRecepcaoSincV4 | 4.00 | `https://homologacao.sefaz.mt.gov.br/ctews2/services/CTeRecepcaoSincV4` |
+| QR Code | 4.00 | `https://homologacao.sefaz.mt.gov.br/cte/qrcode` |
+
+**CT-e — contingência SVC-RS (homologação).** Status `https://cte-homologacao.svrs.rs.gov.br/ws/CTeStatusServicoV4/CTeStatusServicoV4.asmx`, recepção síncrona `.../CTeRecepcaoSincV4/CTeRecepcaoSincV4.asmx`, consulta `.../CTeConsultaV4/CTeConsultaV4.asmx`, eventos `.../CTeRecepcaoEventoV4/CTeRecepcaoEventoV4.asmx`; QR Code `https://dfe-portal.svrs.rs.gov.br/cte/qrCode`.
+
+**CT-e — Distribuição DF-e (Ambiente Nacional, homologação).** `https://hom1.cte.fazenda.gov.br/CTeDistribuicaoDFe/CTeDistribuicaoDFe.asmx`.
+
+**MDF-e — autorizador SVRS (Ambiente Nacional), recepção síncrona.**
+
+| Serviço | Versão | URL (homologação) |
+|---|---|---|
+| MDFeStatusServico | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeStatusServico/MDFeStatusServico.asmx` |
+| MDFeRecepcaoSinc | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeRecepcaoSinc/MDFeRecepcaoSinc.asmx` |
+| MDFeConsulta | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeConsulta/MDFeConsulta.asmx` |
+| MDFeRecepcaoEvento | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeRecepcaoEvento/MDFeRecepcaoEvento.asmx` |
+| MDFeConsNaoEnc | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeConsNaoEnc/MDFeConsNaoEnc.asmx` |
+| MDFeDistribuicaoDFe | 1.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeDistribuicaoDFe/MDFeDistribuicaoDFe.asmx` |
+| QR Code | — | `https://dfe-portal.svrs.rs.gov.br/mdfe/qrCode` |
+
+Observações da conferência: os WSDL não puderam ser lidos (certificado TLS da SEFAZ não reconhecido neste Windows — pendência 10), então o formato SOAP ainda depende do MOC ou dos WSDL (pendência 11). O MDF-e usa recepção síncrona (`MDFeRecepcaoSinc`), além do lote (`enviMDFe`) previsto nos XSD.
