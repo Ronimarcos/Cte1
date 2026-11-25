@@ -31,7 +31,7 @@ Aplicativo desktop (Windows Forms, .NET 10) **multiempresa** para emissão de CT
 | MDF-e — leiaute 3.00b | `PL_MDFe_300b_NT012025_1.05` (o zip chama-se `_1_04`) | Vigente |
 | MDF-e — NT 2026.001 (CIOT obrigatório, rejeição 684) | Regra de validação, sem novo XSD | Homologação 21/09/2026, produção 23/11/2026 |
 | Distribuição DF-e do CT-e | `PL_CTeDistDFe_100` | Vigente |
-| Classificação tributária IBS/CBS | IT 2025.002 v1.70 (setembro/2026; PDF em `docs/moc/`) e tabela online oficial da SVRS | Tabelas de referência |
+| Classificação tributária IBS/CBS | IT 2025.002 v1.71 (outubro/2026; PDF em `docs/moc/`) e tabela online oficial da SVRS | Tabelas de referência |
 
 Os XSD do NT 2026.005 são a fonte única para geração das classes e para validação do CT-e antes da transmissão.
 
@@ -360,7 +360,7 @@ PDFs em `docs/moc/` (fora do Git). Cronograma da NT 2026.005: regras de validaç
 - `vRBSNitem` do evento de Tributação do SN: para CT-e, um único item, com a receita bruta = `vTPrest` quando tributável.
 - Alíquotas de 2026 quando o grupo regular é informado: CBS 0,90 %, IBS UF 0,1 %, IBS Mun 0 % (em homologação, em 2026, também se aceitam as de 2027).
 
-**Classificação tributária (CST e `cClassTrib`) permitida no CT-e.** Fonte: IT 2025.002 v1.70 (setembro/2026, em `docs/moc/`) e a tabela online oficial que ela indica (`dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria`, visão aberta por `cClassTrib`, consultada em 25/11/2026). O `cClassTrib` tem 6 dígitos e os 3 primeiros são o CST. Só estes códigos trazem "CTE" na lista de documentos permitidos:
+**Classificação tributária (CST e `cClassTrib`) permitida no CT-e.** Fonte: IT 2025.002 v1.71 (outubro/2026, em `docs/moc/`; em relação à v1.70 só atualiza textos e ativa a DIR para 410003 e 410999, sem efeito no CT-e) e a tabela online oficial que ela indica (`dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria`, visão aberta por `cClassTrib`, consultada em 25/11/2026). O `cClassTrib` tem 6 dígitos e os 3 primeiros são o CST. Só estes códigos trazem "CTE" na lista de documentos permitidos:
 
 | CST | `cClassTrib` | Situação | Redução IBS/CBS | `tpRBSN` |
 |---|---|---|---|---|
