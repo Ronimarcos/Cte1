@@ -14,6 +14,11 @@
     <None Include="..\..\schemas\**\*.xsd" LinkBase="schemas" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Raízes ICP-Brasil oficiais (repositório AC-Raiz do ITI), embutidas para validar o TLS dos servidores da SEFAZ. -->
+    <EmbeddedResource Include="Webservices\Raizes\*.crt" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
