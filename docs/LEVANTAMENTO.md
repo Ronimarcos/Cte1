@@ -115,6 +115,8 @@ Documentos são gravados **sem máscara**: CPF, CEP, RNTRC e telefone só com d�
 | Titular / CnpjTitular | texto | Sim | Lidos do certificado |
 | ValidoDe / ValidoAte | data | Sim | Alertar vencimento com antecedência |
 
+Regras (P3): arquivo e senha do A1 criptografados com DPAPI no escopo da máquina (`ProtetorDpapi`); o certificado precisa ter a mesma raiz de CNPJ (8 primeiros caracteres) da empresa, ou o mesmo CPF; certificado vencido não é gravado. Titular e documento vêm do SAN ICP-Brasil (OID 2.16.76.1.3.3 CNPJ / 2.16.76.1.3.1 CPF) ou, na falta dele, do CN "NOME:CNPJ".
+
 ### 5.3 SerieDocumento (numeração)
 
 | Campo | Tipo | Obrig. | Tag XML | Observação |
@@ -279,5 +281,5 @@ Referência de usabilidade vista (fluxo de emissão de outro emissor web), usada
 | P2a | Banco preparado na abertura (migrações, `appsettings.json` com `Banco:Caminho`, vazio = padrão), injeção de dependência (`IDbContextFactory`, um contexto por operação), carga dos 5.571 municípios do IBGE (CSV embutido, baixado em 25/11/2026 da API `servicodados.ibge.gov.br`), dados de demonstração oferecidos com o banco sem empresas, cadastro e seleção de empresa no banco (CNPJ ou CPF; município com digitação e sugestões). A lista genérica de cadastros passou a ser assíncrona. Ponte provisória `EmpresaPrototipo.DeEntidade` para os assistentes | Concluída |
 | P2b | Participantes, veículos, proprietários, motoristas, apólices e séries no banco (base `FonteCadastroBanco` e `ServicoCadastro<T>`; diálogos gravam e continuam abertos se o banco recusar; exclusões barradas pelo banco). Dados de demonstração completos, com os mesmos códigos dos dados em memória; quem só tinha as empresas da P2a recebe a oferta de completar. Certificados continuam em memória até a P3 (exigem arquivo e senha criptografados). Os assistentes de CT-e/MDF-e ainda leem os dados em memória até a P2c | Concluída |
 | P2c | Assistentes e consultas de CT-e/MDF-e leem os cadastros do banco (`CadastrosEmissao`, lido ao abrir cada tela); incluir/editar participante dentro do CT-e grava no banco; municípios do percurso com os 5.571 do IBGE. Removidas a ponte `EmpresaPrototipo` e as 8 classes de cadastro em memória. Continuam em memória: documentos CT-e/MDF-e de exemplo (até a P4, apontando para os códigos da demonstração; sem eles aparece "(não encontrado)") e certificados (até a P3) | Concluída |
-| P3 | Certificado real: A1 criptografado e A3 pelo repositório do Windows, atrás de `IProvedorCertificado` | Pendente |
+| P3 | Certificado real: A1 lido do `.pfx` com a senha e guardado criptografado (DPAPI, escopo da máquina); A3 escolhido na lista do repositório pessoal do Windows e localizado pelo thumbprint; titular, CNPJ e validade lidos do certificado; bloqueio de outra raiz de CNPJ e de certificado vencido; `IProvedorCertificado` (A1 e A3) pronto para a assinatura da P4. Removidas as classes `CertificadoPrototipo` e `FonteCadastro` | Concluída |
 | P4 | CT-e e MDF-e gravados no banco, junto com o motor DF-e | Pendente |

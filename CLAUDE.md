@@ -86,5 +86,5 @@ Preferências do responsável pelo projeto:
   - [x] P2a: banco na abertura (`appsettings.json`), municípios do IBGE, empresas e seleção de empresa no banco, dados de demonstração.
   - [x] P2b: participantes, veículos, proprietários, motoristas, apólices e séries no banco (certificados na P3).
   - [x] P2c: assistentes e consultas de CT-e/MDF-e lendo os cadastros do banco (documentos ainda em memória).
-  - [ ] P3: certificado A1/A3 real.
+  - [x] P3: certificado A1/A3 real (DPAPI na máquina, A3 pelo thumbprint, `IProvedorCertificado`).
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.

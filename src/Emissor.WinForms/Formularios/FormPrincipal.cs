@@ -48,7 +48,7 @@ public partial class FormPrincipal : Form
             [mnuCadastrosParticipantes] = () => new FonteParticipantes(_servicos.Participantes, _municipios, _empresa.Id),
             [mnuCadastrosVeiculos] = () => new FonteVeiculos(_servicos.Veiculos, _servicos.Proprietarios, _empresa.Id),
             [mnuCadastrosProprietarios] = () => new FonteProprietarios(_servicos.Proprietarios, _empresa.Id),
-            [mnuCadastrosCertificados] = () => new FonteCertificados(_empresa.Id),
+            [mnuCadastrosCertificados] = () => new FonteCertificados(_servicos.Certificados, _servicos.Protetor, _empresa),
             [mnuCadastrosSeries] = () => new FonteSeries(_servicos.Series, _empresa.Id),
             [mnuCadastrosMotoristas] = () => new FonteMotoristas(_servicos.Motoristas, _empresa.Id),
             [mnuCadastrosApolices] = () => new FonteApolices(_servicos.Apolices, _empresa.Id),

@@ -8,8 +8,7 @@ namespace Emissor.WinForms.Formularios.Cadastros;
 
 /// <summary>
 /// Cadastro de empresas (emitentes), gravado no banco. Não é filtrado pela empresa ativa.
-/// A empresa em uso não pode ser excluída; a recusa por vínculos vem do banco (e, até a fatia P2b,
-/// também do cadastro de certificados, que ainda está em memória até a fatia P3).
+/// A empresa em uso não pode ser excluída; a empresa com cadastros vinculados é recusada pelo banco.
 /// </summary>
 internal sealed class FonteEmpresas : IFonteCadastro
 {
@@ -102,13 +101,6 @@ internal sealed class FonteEmpresas : IFonteCadastro
             return false;
         }
 
-        if (TemCadastrosEmMemoria(empresa.Id))
-        {
-            MessageBox.Show(dono, "A empresa tem cadastros vinculados e não pode ser excluída.", Titulo,
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
-            return false;
-        }
-
         var resposta = MessageBox.Show(dono, $"Excluir a empresa \"{empresa.RazaoSocial}\"?", Titulo,
             MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (resposta != DialogResult.Yes)
@@ -133,9 +125,4 @@ internal sealed class FonteEmpresas : IFonteCadastro
     /// <inheritdoc />
     public Color? CorDaLinha(object registro) => null;
 
-    /// <summary>
-    /// Vínculo com o cadastro de certificados, que continua em memória até a fatia P3. Os demais cadastros estão
-    /// no banco, e o próprio banco recusa excluir a empresa que os tenha.
-    /// </summary>
-    private static bool TemCadastrosEmMemoria(int empresaId) => DadosFicticios.Certificados.Existe(c => c.EmpresaId == empresaId);
 }
