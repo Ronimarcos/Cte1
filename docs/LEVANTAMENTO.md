@@ -250,7 +250,7 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
 | 8 | ~~Enviar imagens de referência das telas de cadastro~~ — encerrada em 23/11/2026: seguido o padrão proposto (§8.1) | Roni |
-| 9 | Definir com a contabilidade o grupo `imp/IBSCBS` do CT-e para o Simples Nacional (CST, `cClassTrib`, `gTribSN`) e o `tpRegimeIBSCBS` do emitente; resolver antes da P4c. As regras não estão no MOC 4.00 (Anexo I de agosto/2022, anterior à Reforma): ficam na NT 2026.005, cujo PDF também deve ir para `docs/moc/` | Roni |
+| 9 | IBS/CBS do CT-e no Simples Nacional (regras da NT 2026.005, ver §8.4). Definir com a contabilidade: (a) se a empresa optou pelo regime regular do IBS/CBS (campo `RegimeIbsCbs` da empresa, que já existe); (b) o CST e o `cClassTrib` do serviço de transporte (tabela da IT 2025.002); (c) de onde vêm as alíquotas efetivas do Simples para IBS e CBS (`pIBSSN`, `pCBSSN`) e como mudam mês a mês. **Bloqueia a autorização (P4c2)**: sem o grupo, o CT-e de CRT 1 sem regime regular é rejeitado (1101) | Roni |
 
 ## 8. Próximos passos
 
@@ -338,3 +338,28 @@ Fonte: tabela "Relação de Serviços Web" do portal nacional do CT-e em homolog
 - QR Code do CT-e (emissão normal): URL do portal da SEFAZ autorizadora + `?chCTe=<chave>&tpAmb=<1|2>`; em contingência (FS-DA/EPEC) acrescenta `&sign=` com a assinatura RSA-SHA1 em Base64 da chave, feita com o certificado que assina o CT-e. A URL de homologação de MT está na tabela acima.
 
 Observações da conferência: os WSDL não puderam ser lidos (certificado TLS da SEFAZ não reconhecido neste Windows — pendência 10), então o formato SOAP ainda depende do MOC ou dos WSDL (pendência 11). O MDF-e usa recepção síncrona (`MDFeRecepcaoSinc`), além do lote (`enviMDFe`) previsto nos XSD.
+
+### 8.4 IBS/CBS no Simples Nacional (NT 2026.005 do CT-e e NT 2026.004 v1.01, lidas em 25/11/2026)
+
+PDFs em `docs/moc/` (fora do Git). Cronograma da NT 2026.005: regras de validação em produção desde **16/11/2026**; evento de Tributação do SN em homologação 26/10/2026 e produção 14/12/2026. NT 2026.004 v1.01 (valor líquido): produção 14/12/2026.
+
+**Como preencher (tabela do item 2.2 da NT 2026.005), pelo CRT e pelo `tpRegimeIBSCBS` do emitente:**
+
+| Situação | CRT | `tpRegimeIBSCBS` | `gIBSCBS` (gIBSUF, gIBSMun, gCBS) | `gTribSN` |
+|---|---|---|---|---|
+| Simples Nacional **sem** regime regular (caso provável da emitente inicial) | 1 | não informar | **não informar** (rejeição 1100) | **informar com `gIBSSN` e `gCBSSN`** (rejeição 1101) |
+| Simples Nacional **com** regime regular do IBS/CBS | 1 | 1 | informar se o CST exigir | não informar (1102) |
+| Excesso de sublimite sem regime regular | 2 | não informar | informar, CBS com alíquota zero | só `gCBSSN` (1103/1104) |
+| Excesso de sublimite com regime regular | 2 | 1 | informar | não informar |
+| Regime Normal com opção pendente pelo SN (2, 3 ou 4) | 3 | 2, 3 ou 4 | informar | conforme a tabela da NT |
+| MEI | 4 | não informar (1092) | não informar (1107) | não informar (1107) |
+
+- `gTribSN` fica dentro de `imp/IBSCBS`, que pelo XSD exige `CST` e `cClassTrib`. `gIBSSN` = `pIBSSN` (alíquota efetiva do IBS no SN, 3v2-4) + `vIBSSN` (13v2); `gCBSSN` = `pCBSSN` + `vCBSSN`.
+- Compra governamental da União em 2027–2028: `pIBSSN` e `vIBSSN` zerados (1108/1109).
+- CT-e complementar de emitente SN com várias chaves complementadas: todas do mesmo ano e mês (909).
+- `vRBSNitem` do evento de Tributação do SN: para CT-e, um único item, com a receita bruta = `vTPrest` quando tributável.
+- Alíquotas de 2026 quando o grupo regular é informado: CBS 0,90 %, IBS UF 0,1 %, IBS Mun 0 % (em homologação, em 2026, também se aceitam as de 2027).
+
+**Consequência para o emissor:** o XML de teste da P4b1 sai sem `IBSCBS` (decisão daquela fatia) e, para a emitente de CRT 1 sem regime regular, seria rejeitado com 1101. Antes de autorizar (P4c2) é preciso montar `IBSCBS` com `CST`, `cClassTrib` e `gTribSN`, com os valores da pendência 9.
+
+**Outras mudanças da NT 2026.004 v1.01 a considerar adiante:** o `tpEmis` 5 (FS-DA) e o evento EPEC deixam de ser aceitos e entra a emissão em **contingência offline** (`tpEmis` = 2); novo grupo de multa e juros; regra do valor total do documento (soma de IBS e CBS a partir de 2027).
