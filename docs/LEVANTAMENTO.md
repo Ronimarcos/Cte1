@@ -241,16 +241,16 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 |---|---|---|
 | 1 | Definir seguradora/averbadora para a averbação automática | Roni |
 | 2 | Definir IPEF para geração automática de CIOT (fase futura) | Roni |
-| 3 | Substituir os dois PDFs do MOC CT-e salvos como texto | Roni |
+| 3 | ~~Substituir os dois PDFs do MOC CT-e salvos como texto~~ — encerrada em 25/11/2026: PDFs originais em `docs/moc/` (fora do Git): MOC CT-e 4.00 Visão Geral e Anexo I, MOC MDF-e 3.00b Visão Geral e Anexo I | Roni |
 | 4 | ~~Confirmar autorizador e SVC do CT-e para MT na tabela de webservices~~ — encerrada em 25/11/2026 (§8.3): MT tem autorizador próprio; contingência na SVC-RS | Desenvolvimento |
 | 10 | ~~Confiança na cadeia ICP-Brasil dos servidores da SEFAZ~~ — encerrada em 25/11/2026: o app leva as 7 raízes vigentes do repositório AC-Raiz do ITI (v4, v5, v6, v7, v10, v12, v13; `src/Emissor.DFe/Webservices/Raizes`) e valida o TLS da SEFAZ por elas, sem mexer no Windows. Teste real: TLS aceito pela SVRS (HTTP 403 sem certificado de cliente, como esperado) | Roni / TI |
-| 11 | Obter o MOC do CT-e 4.00 e do MDF-e 3.00b (PDF original) ou os WSDL de homologação, para o formato SOAP dos webservices (namespaces, ação e elemento da mensagem); não escrever de memória. Os WSDL exigem certificado de cliente ICP-Brasil válido (a SVRS respondeu 403 sem ele): com o certificado de homologação da empresa cadastrado, o emissor consegue lê-los | Roni |
+| 11 | (Parcial em 25/11/2026: MOC lido, ver §8.3; falta confirmar o namespace dos serviços V4 do CT-e e o elemento de retorno no WSDL ou numa chamada real.) Obter o MOC do CT-e 4.00 e do MDF-e 3.00b (PDF original) ou os WSDL de homologação, para o formato SOAP dos webservices (namespaces, ação e elemento da mensagem); não escrever de memória. Os WSDL exigem certificado de cliente ICP-Brasil válido (a SVRS respondeu 403 sem ele): com o certificado de homologação da empresa cadastrado, o emissor consegue lê-los | Roni |
 | 12 | A homologação da SEFAZ-MT (`homologacao.sefaz.mt.gov.br`, IP 201.49.172.12) recusou conexão na porta 443 em 25/11/2026 a partir desta rede (a produção `cte.sefaz.mt.gov.br` e a SVRS responderam). Confirmar se é indisponibilidade da SEFAZ-MT ou bloqueio de rede/firewall | Roni / TI |
 | 5 | Confirmar exigência de CSRT pela SEFAZ-MT | Desenvolvimento |
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
 | 8 | ~~Enviar imagens de referência das telas de cadastro~~ — encerrada em 23/11/2026: seguido o padrão proposto (§8.1) | Roni |
-| 9 | Definir com a contabilidade o grupo `imp/IBSCBS` do CT-e para o Simples Nacional (CST, `cClassTrib`, `gTribSN`) e o `tpRegimeIBSCBS` do emitente; resolver antes da P4c | Roni |
+| 9 | Definir com a contabilidade o grupo `imp/IBSCBS` do CT-e para o Simples Nacional (CST, `cClassTrib`, `gTribSN`) e o `tpRegimeIBSCBS` do emitente; resolver antes da P4c. As regras não estão no MOC 4.00 (Anexo I de agosto/2022, anterior à Reforma): ficam na NT 2026.005, cujo PDF também deve ir para `docs/moc/` | Roni |
 
 ## 8. Próximos passos
 
@@ -326,5 +326,15 @@ Fonte: tabela "Relação de Serviços Web" do portal nacional do CT-e em homolog
 | MDFeConsNaoEnc | 3.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeConsNaoEnc/MDFeConsNaoEnc.asmx` |
 | MDFeDistribuicaoDFe | 1.00 | `https://mdfe-homologacao.svrs.rs.gov.br/ws/MDFeDistribuicaoDFe/MDFeDistribuicaoDFe.asmx` |
 | QR Code | — | `https://dfe-portal.svrs.rs.gov.br/mdfe/qrCode` |
+
+
+**Formato das mensagens (MOC lido em 25/11/2026, `docs/moc/`).**
+
+- Comunicação: TLS com autenticação mútua (certificado ICP-Brasil A1/A3 com o CNPJ), SOAP 1.2, Document/Literal, WS-I Basic Profile. O SOAP Header foi descontinuado (CT-e: "Eliminação do SOAP Header dos Webservices", 04/2023; MDF-e: "não será mais utilizada e recomenda-se que o emitente não envie"); a mensagem vai só no `soap12:Body`.
+- CT-e: a mensagem vai no elemento `cteDadosMsg`. Recepção (CT-e modelo 57) compactada em GZip e convertida para Base64; demais serviços com XML sem compactação. Serviços e métodos do MOC 4.00: `CTeRecepcaoSincV4`/`cteRecepcao` (síncrono, retorno `retCTe`), `CTeStatusServicoV4`/`cteStatusServicoCT` (`consStatServCTe` → `retConsStatServCTe`; `xServ` = STATUS), `CTeConsultaV4`/`cteConsultaCT`, `CTeRecepcaoEventoV4`/`cteRecepcaoEvento`.
+- CT-e, ponto a confirmar: o único exemplo de namespace do MOC é `http://www.portalfiscal.inf.br/cte/wsdl/CTeRecepcaoSinc`, sem o "V4" do nome do serviço publicado na tabela oficial (`CTeRecepcaoSincV4`). Confirmar no WSDL ou na primeira chamada real (a SEFAZ responde SOAP Fault se o namespace estiver errado).
+- MDF-e: a mensagem vai no elemento `mdfeDadosMsg`, com namespace `http://www.portalfiscal.inf.br/mdfe/wsdl/<serviço>` (exemplos do MOC para `MDFeRecepcaoSinc` e `MDFeRecepcaoEvento`). Recepção compactada em GZip + Base64; consulta, eventos e status sem compactação. Serviços e métodos do MOC 3.00b: `MDFeRecepcaoSinc`/`mdfeRecepcao`, `MDFeConsulta`/`mdfeConsultaMDF`, `MDFeConsNaoEnc`/`mdfeConsNaoEnc`, `MDFeStatusServico`/`mdfeStatusServicoMDF`, `MDFeRecepcaoEvento`/`mdfeRecepcaoEvento`.
+- Retorno: o MOC descreve só o XML de retorno (`retConsStatServCTe`, `retCTe`...), não o elemento SOAP que o envolve; o emissor localiza o retorno pelo nome do elemento dentro do `Body`.
+- QR Code do CT-e (emissão normal): URL do portal da SEFAZ autorizadora + `?chCTe=<chave>&tpAmb=<1|2>`; em contingência (FS-DA/EPEC) acrescenta `&sign=` com a assinatura RSA-SHA1 em Base64 da chave, feita com o certificado que assina o CT-e. A URL de homologação de MT está na tabela acima.
 
 Observações da conferência: os WSDL não puderam ser lidos (certificado TLS da SEFAZ não reconhecido neste Windows — pendência 10), então o formato SOAP ainda depende do MOC ou dos WSDL (pendência 11). O MDF-e usa recepção síncrona (`MDFeRecepcaoSinc`), além do lote (`enviMDFe`) previsto nos XSD.
