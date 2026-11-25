@@ -31,7 +31,7 @@ Aplicativo desktop (Windows Forms, .NET 10) **multiempresa** para emissão de CT
 | MDF-e — leiaute 3.00b | `PL_MDFe_300b_NT012025_1.05` (o zip chama-se `_1_04`) | Vigente |
 | MDF-e — NT 2026.001 (CIOT obrigatório, rejeição 684) | Regra de validação, sem novo XSD | Homologação 21/09/2026, produção 23/11/2026 |
 | Distribuição DF-e do CT-e | `PL_CTeDistDFe_100` | Vigente |
-| Classificação tributária IBS/CBS | IT 2025.002 v1.71 | Tabelas de referência |
+| Classificação tributária IBS/CBS | IT 2025.002 v1.70 (setembro/2026; PDF em `docs/moc/`) e tabela online oficial da SVRS | Tabelas de referência |
 
 Os XSD do NT 2026.005 são a fonte única para geração das classes e para validação do CT-e antes da transmissão.
 
@@ -250,7 +250,7 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 6 | Definir se o grupo `infPag` (pagamento do frete) do MDF-e entra na v1 | Roni |
 | 7 | Obter XML reais de NF-e e CT-e para testar importação e subcontratação | Roni |
 | 8 | ~~Enviar imagens de referência das telas de cadastro~~ — encerrada em 23/11/2026: seguido o padrão proposto (§8.1) | Roni |
-| 9 | IBS/CBS do CT-e no Simples Nacional (regras da NT 2026.005, ver §8.4). Definir com a contabilidade: (a) se a empresa optou pelo regime regular do IBS/CBS (campo `RegimeIbsCbs` da empresa, que já existe); (b) o CST e o `cClassTrib` do serviço de transporte (tabela da IT 2025.002); (c) de onde vêm as alíquotas efetivas do Simples para IBS e CBS (`pIBSSN`, `pCBSSN`) e como mudam mês a mês. **Bloqueia a autorização (P4c2)**: sem o grupo, o CT-e de CRT 1 sem regime regular é rejeitado (1101) | Roni |
+| 9 | IBS/CBS do CT-e no Simples Nacional (regras da NT 2026.005, ver §8.4). Definir com a contabilidade: (a) se a empresa optou pelo regime regular do IBS/CBS (campo `RegimeIbsCbs` da empresa, que já existe); (b) o CST e o `cClassTrib` do serviço de transporte (proposta: CST 000 / `cClassTrib` 000001, ver §8.4); (c) de onde vêm as alíquotas efetivas do Simples para IBS e CBS (`pIBSSN`, `pCBSSN`) e como mudam mês a mês. **Bloqueia a autorização (P4c2)**: sem o grupo, o CT-e de CRT 1 sem regime regular é rejeitado (1101) | Roni |
 
 ## 8. Próximos passos
 
@@ -359,6 +359,25 @@ PDFs em `docs/moc/` (fora do Git). Cronograma da NT 2026.005: regras de validaç
 - CT-e complementar de emitente SN com várias chaves complementadas: todas do mesmo ano e mês (909).
 - `vRBSNitem` do evento de Tributação do SN: para CT-e, um único item, com a receita bruta = `vTPrest` quando tributável.
 - Alíquotas de 2026 quando o grupo regular é informado: CBS 0,90 %, IBS UF 0,1 %, IBS Mun 0 % (em homologação, em 2026, também se aceitam as de 2027).
+
+**Classificação tributária (CST e `cClassTrib`) permitida no CT-e.** Fonte: IT 2025.002 v1.70 (setembro/2026, em `docs/moc/`) e a tabela online oficial que ela indica (`dfe-portal.svrs.rs.gov.br/DFE/ClassificacaoTributaria`, visão aberta por `cClassTrib`, consultada em 25/11/2026). O `cClassTrib` tem 6 dígitos e os 3 primeiros são o CST. Só estes códigos trazem "CTE" na lista de documentos permitidos:
+
+| CST | `cClassTrib` | Situação | Redução IBS/CBS | `tpRBSN` |
+|---|---|---|---|---|
+| 000 | 000001 | Situações tributadas integralmente pelo IBS e CBS | 0 % / 0 % | 1 - Receita bruta interna |
+| 200 | 200001 | Transporte de bens até zonas de processamento de exportação ou exportados a partir delas | 100 % / 100 % | 3 - Exportação direta |
+| 200 | 200020 | Operação de sociedades cooperativas optantes por regime específico | 100 % / 100 % | 1 - Receita bruta interna |
+| 200 | 200050 | Transporte aéreo regional coletivo de passageiros ou de carga | 40 % / 40 % | 1 - Receita bruta interna |
+| 410 | 410001 | Bonificações no documento, sem evento posterior | sem alíquota | 0 - Não é receita bruta |
+| 410 | 410003 | Doações e amostras grátis sem contraprestação | sem alíquota | 0 - Não é receita bruta |
+| 410 | 410004 | Exportações de bens e serviços | sem alíquota | 3 - Exportação direta |
+| 410 | 410015 | Fornecimento por transportador autônomo não contribuinte | sem alíquota | 9 - Incompatível com SN |
+| 410 | 410026 | Doações e amostras grátis com anulação de crédito | sem alíquota | 0 - Não é receita bruta |
+| 410 | 410027 | Exportação de serviço ou de bem imaterial | sem alíquota | 3 - Exportação direta |
+| 410 | 410035 | Fornecimento realizado por nanoempreendedor | sem alíquota | 9 - Incompatível com SN |
+| 410 | 410999 | Operações não onerosas sem previsão de tributação | sem alíquota | 0 - Não é receita bruta |
+
+**Proposta para a contabilidade confirmar (pendência 9, item b):** frete rodoviário de carga no mercado interno, pago pelo tomador, por empresa do Simples Nacional → **CST 000 / `cClassTrib` 000001** (tributação integral, receita bruta interna). Casos especiais da lista (exportação, cooperativa) só se a empresa tiver essas operações. Com CRT 1 sem regime regular, o grupo `gIBSCBS` continua **não** sendo informado (exceção da regra 315 e regra 1100 da NT 2026.005); vai só o `gTribSN`. O `indDoacao` do 000001 é exigido apenas quando a operação for doação tributada, o que não é o caso do frete pago.
 
 **Consequência para o emissor:** o XML de teste da P4b1 sai sem `IBSCBS` (decisão daquela fatia) e, para a emitente de CRT 1 sem regime regular, seria rejeitado com 1101. Antes de autorizar (P4c2) é preciso montar `IBSCBS` com `CST`, `cClassTrib` e `gTribSN`, com os valores da pendência 9.
 
