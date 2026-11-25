@@ -1,3 +1,4 @@
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 
 namespace Emissor.WinForms.Prototipo;
@@ -70,6 +71,33 @@ public sealed class EmpresaPrototipo : RegistroPrototipo
 
     /// <summary>Descrição do CRT para exibição.</summary>
     public string CrtDescricao => OpcoesCadastro.Texto(OpcoesCadastro.Crts, Crt);
+
+    /// <summary>
+    /// Ponte provisória (fatia P2a): converte a empresa gravada no banco para o formato que os assistentes de
+    /// CT-e e MDF-e e os cadastros ainda em memória usam. Some na fatia P2c.
+    /// </summary>
+    /// <param name="empresa">Empresa do banco.</param>
+    public static EmpresaPrototipo DeEntidade(Empresa empresa) => new()
+    {
+        Id = empresa.Id,
+        RazaoSocial = empresa.RazaoSocial,
+        NomeFantasia = empresa.NomeFantasia,
+        Cnpj = empresa.Documento,
+        Ie = empresa.Ie,
+        IeSt = empresa.IeSt,
+        Crt = empresa.Crt,
+        RegimeIbsCbs = empresa.RegimeIbsCbs,
+        Rntrc = empresa.Rntrc,
+        Logradouro = empresa.Endereco.Logradouro,
+        Numero = empresa.Endereco.Numero,
+        Complemento = empresa.Endereco.Complemento,
+        Bairro = empresa.Endereco.Bairro,
+        MunicipioCodigo = empresa.Endereco.MunicipioCodigo,
+        Cep = empresa.Endereco.Cep,
+        Fone = empresa.Fone,
+        Email = empresa.Email,
+        Homologacao = empresa.AmbientePadrao == TipoAmbiente.Homologacao,
+    };
 
     /// <inheritdoc />
     public override IReadOnlyList<string> ValidarObrigatorios()

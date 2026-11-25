@@ -1,7 +1,10 @@
+using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Formularios.Cte;
 using Emissor.WinForms.Formularios.Mdfe;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios;
 
@@ -18,19 +21,34 @@ public partial class FormPrincipal : Form
     /// <summary>Opções de menu que abrem telas próprias (fora do padrão de cadastro).</summary>
     private readonly Dictionary<ToolStripItem, Action> _telas;
 
+    private readonly ServicoEmpresas _servicoEmpresas;
+    private readonly CatalogoMunicipios _municipios;
+
+    /// <summary>Empresa ativa, como gravada no banco.</summary>
+    private Empresa _empresa;
+
+    /// <summary>
+    /// Mesma empresa no formato do protótipo, usado pelos assistentes de CT-e/MDF-e e pelos cadastros ainda em
+    /// memória (ponte provisória até a fatia P2c).
+    /// </summary>
     private EmpresaPrototipo _empresaAtiva;
 
     /// <summary>Cria a janela principal já com a empresa escolhida na seleção inicial.</summary>
-    /// <param name="empresaAtiva">Empresa com que o usuário vai trabalhar.</param>
-    public FormPrincipal(EmpresaPrototipo empresaAtiva)
+    /// <param name="empresa">Empresa com que o usuário vai trabalhar.</param>
+    /// <param name="servicoEmpresas">Operações de empresa no banco.</param>
+    /// <param name="municipios">Municípios do IBGE.</param>
+    public FormPrincipal(Empresa empresa, ServicoEmpresas servicoEmpresas, CatalogoMunicipios municipios)
     {
         InitializeComponent();
-        _empresaAtiva = empresaAtiva;
+        _servicoEmpresas = servicoEmpresas;
+        _municipios = municipios;
+        _empresa = empresa;
+        _empresaAtiva = EmpresaPrototipo.DeEntidade(empresa);
 
         // As funções leem _empresaAtiva na hora de abrir, então seguem a troca de empresa.
         _cadastros = new()
         {
-            [mnuCadastrosEmpresas] = () => new FonteEmpresas(_empresaAtiva.Id, RecarregarEmpresaAtiva),
+            [mnuCadastrosEmpresas] = () => new FonteEmpresas(_servicoEmpresas, _municipios, _empresa.Id, RecarregarEmpresaAtivaAsync),
             [mnuCadastrosParticipantes] = () => new FonteParticipantes(_empresaAtiva.Id),
             [mnuCadastrosVeiculos] = () => new FonteVeiculos(_empresaAtiva.Id),
             [mnuCadastrosProprietarios] = () => new FonteProprietarios(_empresaAtiva.Id),
@@ -176,16 +194,23 @@ public partial class FormPrincipal : Form
     }
 
     /// <summary>Relê a empresa ativa depois de uma alteração no cadastro de empresas e atualiza título e barra de status.</summary>
-    private void RecarregarEmpresaAtiva()
+    private async Task RecarregarEmpresaAtivaAsync()
     {
-        if (DadosFicticios.Empresas.ObterPorId(_empresaAtiva.Id) is { } atualizada)
+        if (await _servicoEmpresas.ObterAsync(_empresa.Id) is { } atualizada)
         {
-            _empresaAtiva = atualizada;
-            AtualizarEmpresaAtiva();
+            DefinirEmpresa(atualizada);
         }
     }
 
-    private void mnuSistemaTrocarEmpresa_Click(object? sender, EventArgs e) => TrocarEmpresa();
+    /// <summary>Guarda a empresa ativa nos dois formatos e atualiza título e barra de status.</summary>
+    private void DefinirEmpresa(Empresa empresa)
+    {
+        _empresa = empresa;
+        _empresaAtiva = EmpresaPrototipo.DeEntidade(empresa);
+        AtualizarEmpresaAtiva();
+    }
+
+    private async void mnuSistemaTrocarEmpresa_Click(object? sender, EventArgs e) => await TrocarEmpresaAsync();
 
     private void mnuSistemaSair_Click(object? sender, EventArgs e) => Close();
 
@@ -204,15 +229,28 @@ public partial class FormPrincipal : Form
     }
 
     /// <summary>Exibe a seleção de empresa e, se outra for escolhida, fecha as telas abertas e troca a empresa ativa.</summary>
-    private void TrocarEmpresa()
+    private async Task TrocarEmpresaAsync()
     {
-        using var selecao = new FormSelecaoEmpresa(DadosFicticios.Empresas.Listar(), _empresaAtiva);
+        IReadOnlyList<EmpresaResumo> empresas;
+        try
+        {
+            empresas = await _servicoEmpresas.ListarResumosAsync();
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível ler as empresas.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
+        using var selecao = new FormSelecaoEmpresa(empresas, _empresa.Id);
         if (selecao.ShowDialog(this) != DialogResult.OK || selecao.EmpresaSelecionada is null)
         {
             return;
         }
 
-        if (selecao.EmpresaSelecionada.Id == _empresaAtiva.Id)
+        if (selecao.EmpresaSelecionada.Id == _empresa.Id
+            || await _servicoEmpresas.ObterAsync(selecao.EmpresaSelecionada.Id) is not { } escolhida)
         {
             return;
         }
@@ -223,18 +261,18 @@ public partial class FormPrincipal : Form
             tela.Close();
         }
 
-        _empresaAtiva = selecao.EmpresaSelecionada;
-        AtualizarEmpresaAtiva();
+        DefinirEmpresa(escolhida);
     }
 
     /// <summary>Atualiza título da janela e barra de status; o ambiente fica em destaque para evitar confusão com produção.</summary>
     private void AtualizarEmpresaAtiva()
     {
-        var homologacao = _empresaAtiva.Homologacao;
+        var homologacao = _empresa.AmbientePadrao == TipoAmbiente.Homologacao;
+        var uf = _municipios.Obter(_empresa.Endereco.MunicipioCodigo)?.Uf ?? string.Empty;
 
-        Text = $"{TituloAplicacao} — {_empresaAtiva.RazaoSocial}";
-        lblStatusEmpresa.Text = $"Empresa: {_empresaAtiva.RazaoSocial} ({_empresaAtiva.Uf})";
-        lblStatusCnpj.Text = $"CNPJ: {_empresaAtiva.Cnpj}";
+        Text = $"{TituloAplicacao} — {_empresa.RazaoSocial}";
+        lblStatusEmpresa.Text = $"Empresa: {_empresa.RazaoSocial} ({uf})";
+        lblStatusCnpj.Text = _empresa.Cpf.Length > 0 ? $"CPF: {Formatador.Cpf(_empresa.Cpf)}" : $"CNPJ: {Formatador.Cnpj(_empresa.Cnpj)}";
         lblStatusAmbiente.Text = homologacao ? "HOMOLOGAÇÃO" : "PRODUÇÃO";
         lblStatusAmbiente.BackColor = homologacao ? Color.Gold : Color.Firebrick;
         lblStatusAmbiente.ForeColor = homologacao ? Color.Black : Color.White;

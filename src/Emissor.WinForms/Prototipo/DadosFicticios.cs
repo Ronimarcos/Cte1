@@ -10,8 +10,8 @@ namespace Emissor.WinForms.Prototipo;
 internal static class DadosFicticios
 {
     /// <summary>
-    /// Lista reduzida de municípios para preencher endereços. Os códigos são do IBGE e serão conferidos
-    /// na carga oficial da tabela (§5.9) quando ela for implementada.
+    /// Lista reduzida de municípios usada pelos cadastros que ainda estão em memória. Os códigos foram conferidos
+    /// com a lista oficial do IBGE carregada no banco (fatia P2a).
     /// </summary>
     public static IReadOnlyList<MunicipioPrototipo> Municipios { get; } =
     [

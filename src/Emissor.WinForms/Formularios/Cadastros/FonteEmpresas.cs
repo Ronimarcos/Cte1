@@ -1,77 +1,145 @@
+using System.Collections;
+using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cadastros;
 
-/// <summary>Cadastro de empresas (emitentes). Não é filtrado pela empresa ativa.</summary>
-internal sealed class FonteEmpresas : FonteCadastro<EmpresaPrototipo>
+/// <summary>
+/// Cadastro de empresas (emitentes), gravado no banco. Não é filtrado pela empresa ativa.
+/// A empresa em uso não pode ser excluída; a recusa por vínculos vem do banco (e, até a fatia P2b,
+/// também dos cadastros que ainda estão em memória).
+/// </summary>
+internal sealed class FonteEmpresas : IFonteCadastro
 {
+    private readonly ServicoEmpresas _empresas;
+    private readonly CatalogoMunicipios _municipios;
     private readonly int _empresaAtivaId;
-    private readonly Action _aoAlterar;
+    private readonly Func<Task> _aoAlterar;
 
     /// <summary>Cria o cadastro de empresas.</summary>
+    /// <param name="empresas">Operações de empresa no banco.</param>
+    /// <param name="municipios">Municípios do IBGE.</param>
     /// <param name="empresaAtivaId">Empresa em uso, que não pode ser excluída.</param>
     /// <param name="aoAlterar">Avisa a janela principal para atualizar a barra de status.</param>
-    public FonteEmpresas(int empresaAtivaId, Action aoAlterar)
-        : base(DadosFicticios.Empresas)
+    public FonteEmpresas(ServicoEmpresas empresas, CatalogoMunicipios municipios, int empresaAtivaId, Func<Task> aoAlterar)
     {
+        _empresas = empresas;
+        _municipios = municipios;
         _empresaAtivaId = empresaAtivaId;
         _aoAlterar = aoAlterar;
     }
 
     /// <inheritdoc />
-    public override string Titulo => "Empresas";
+    public string Titulo => "Empresas";
 
     /// <inheritdoc />
-    public override IReadOnlyList<ColunaCadastro> Colunas { get; } =
+    public IReadOnlyList<ColunaCadastro> Colunas { get; } =
     [
-        new(nameof(EmpresaPrototipo.RazaoSocial), "Razão social", 40),
-        new(nameof(EmpresaPrototipo.Cnpj), "CNPJ", 18),
-        new(nameof(EmpresaPrototipo.MunicipioDescricao), "Município", 18),
-        new(nameof(EmpresaPrototipo.CrtDescricao), "CRT", 14),
-        new(nameof(EmpresaPrototipo.AmbienteDescricao), "Ambiente", 10),
+        new(nameof(EmpresaResumo.RazaoSocial), "Razão social", 40),
+        new(nameof(EmpresaResumo.Cnpj), "CNPJ/CPF", 18),
+        new(nameof(EmpresaResumo.MunicipioDescricao), "Município", 18),
+        new(nameof(EmpresaResumo.CrtDescricao), "CRT", 14),
+        new(nameof(EmpresaResumo.AmbienteDescricao), "Ambiente", 10),
     ];
 
     /// <inheritdoc />
-    protected override string NomeRegistro => "a empresa";
-
-    /// <inheritdoc />
-    protected override string TextoPesquisa(EmpresaPrototipo item) =>
-        $"{item.RazaoSocial} {item.NomeFantasia} {item.Cnpj} {item.MunicipioDescricao}";
-
-    /// <inheritdoc />
-    protected override string Descrever(EmpresaPrototipo item) => item.RazaoSocial;
-
-    /// <inheritdoc />
-    protected override EmpresaPrototipo CriarNovo() => new();
-
-    /// <inheritdoc />
-    protected override bool AbrirEdicao(IWin32Window dono, EmpresaPrototipo item, bool novo)
+    public async Task<IList> ListarAsync(string pesquisa)
     {
-        using var tela = new FormEdicaoEmpresa(item, novo);
-        return tela.ShowDialog(dono) == DialogResult.OK;
+        var termo = pesquisa.Trim();
+        var empresas = await _empresas.ListarResumosAsync();
+        return empresas
+            .Where(e => termo.Length == 0
+                || $"{e.RazaoSocial} {e.NomeFantasia} {e.Cnpj} {e.MunicipioDescricao}".Contains(termo, StringComparison.CurrentCultureIgnoreCase))
+            .ToList();
     }
 
     /// <inheritdoc />
-    protected override string? MotivoParaNaoExcluir(EmpresaPrototipo item)
+    public int IdDe(object registro) => ((EmpresaResumo)registro).Id;
+
+    /// <inheritdoc />
+    public async Task<int?> NovoAsync(IWin32Window dono)
     {
-        if (item.Id == _empresaAtivaId)
+        var empresa = new Empresa();
+        using var tela = new FormEdicaoEmpresa(empresa, novo: true, _municipios, _empresas.IncluirAsync);
+        if (tela.ShowDialog(dono) != DialogResult.OK)
         {
-            return "A empresa em uso não pode ser excluída. Troque de empresa antes.";
+            return null;
         }
 
-        var temCadastros = DadosFicticios.Participantes.Existe(p => p.EmpresaId == item.Id)
-            || DadosFicticios.Veiculos.Existe(v => v.EmpresaId == item.Id)
-            || DadosFicticios.Proprietarios.Existe(p => p.EmpresaId == item.Id)
-            || DadosFicticios.Certificados.Existe(c => c.EmpresaId == item.Id)
-            || DadosFicticios.Series.Existe(s => s.EmpresaId == item.Id)
-            || DadosFicticios.Motoristas.Existe(m => m.EmpresaId == item.Id)
-            || DadosFicticios.Apolices.Existe(a => a.EmpresaId == item.Id);
-        return temCadastros
-            ? "A empresa tem cadastros vinculados (participantes, veículos, proprietários, certificados, séries, "
-                + "motoristas ou apólices) e não pode ser excluída."
-            : null;
+        await _aoAlterar();
+        return empresa.Id;
     }
 
     /// <inheritdoc />
-    protected override void AoAlterar() => _aoAlterar();
+    public async Task<bool> EditarAsync(IWin32Window dono, object registro)
+    {
+        if (await _empresas.ObterAsync(IdDe(registro)) is not { } empresa)
+        {
+            MessageBox.Show(dono, "A empresa não existe mais. A lista será atualizada.", Titulo, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return true;
+        }
+
+        using var tela = new FormEdicaoEmpresa(empresa, novo: false, _municipios, _empresas.AlterarAsync);
+        if (tela.ShowDialog(dono) != DialogResult.OK)
+        {
+            return false;
+        }
+
+        await _aoAlterar();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ExcluirAsync(IWin32Window dono, object registro)
+    {
+        var empresa = (EmpresaResumo)registro;
+        if (empresa.Id == _empresaAtivaId)
+        {
+            MessageBox.Show(dono, "A empresa em uso não pode ser excluída. Troque de empresa antes.", Titulo,
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return false;
+        }
+
+        if (TemCadastrosEmMemoria(empresa.Id))
+        {
+            MessageBox.Show(dono, "A empresa tem cadastros vinculados e não pode ser excluída.", Titulo,
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return false;
+        }
+
+        var resposta = MessageBox.Show(dono, $"Excluir a empresa \"{empresa.RazaoSocial}\"?", Titulo,
+            MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+        if (resposta != DialogResult.Yes)
+        {
+            return false;
+        }
+
+        try
+        {
+            await _empresas.ExcluirAsync(empresa.Id);
+        }
+        catch (RegraNegocioException erro)
+        {
+            MessageBox.Show(dono, string.Join(Environment.NewLine, erro.Pendencias), Titulo, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return false;
+        }
+
+        await _aoAlterar();
+        return true;
+    }
+
+    /// <inheritdoc />
+    public Color? CorDaLinha(object registro) => null;
+
+    /// <summary>Vínculos com os cadastros que ainda estão em memória (até a fatia P2b).</summary>
+    private static bool TemCadastrosEmMemoria(int empresaId) =>
+        DadosFicticios.Participantes.Existe(p => p.EmpresaId == empresaId)
+        || DadosFicticios.Veiculos.Existe(v => v.EmpresaId == empresaId)
+        || DadosFicticios.Proprietarios.Existe(p => p.EmpresaId == empresaId)
+        || DadosFicticios.Certificados.Existe(c => c.EmpresaId == empresaId)
+        || DadosFicticios.Series.Existe(s => s.EmpresaId == empresaId)
+        || DadosFicticios.Motoristas.Existe(m => m.EmpresaId == empresaId)
+        || DadosFicticios.Apolices.Existe(a => a.EmpresaId == empresaId);
 }

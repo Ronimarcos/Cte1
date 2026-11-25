@@ -16,6 +16,39 @@ public partial class UcEndereco : UserControl
         cboMunicipio.Carregar(DadosFicticios.Municipios.Select(m => new Opcao<int>(m.Codigo, m.Descricao)));
     }
 
+    /// <summary>
+    /// Troca a lista de municípios (ex.: os 5.571 do IBGE vindos do banco). Com uma lista grande, o campo passa a
+    /// aceitar digitação com sugestões ("Cuia" → "Cuiabá/MT"), e o texto digitado é conferido ao sair do campo.
+    /// </summary>
+    /// <param name="municipios">Opções "Nome/UF" com o código IBGE.</param>
+    public void CarregarMunicipios(IReadOnlyList<Opcao<int>> municipios)
+    {
+        var atual = MunicipioCodigo;
+        cboMunicipio.DropDownStyle = ComboBoxStyle.DropDown;
+        cboMunicipio.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        cboMunicipio.AutoCompleteSource = AutoCompleteSource.ListItems;
+        cboMunicipio.Carregar(municipios);
+        cboMunicipio.Selecionar(atual);
+        cboMunicipio.Leave -= cboMunicipio_Leave;
+        cboMunicipio.Leave += cboMunicipio_Leave;
+    }
+
+    /// <summary>Seleciona o município cujo texto foi digitado por inteiro; senão, limpa o campo.</summary>
+    private void cboMunicipio_Leave(object? sender, EventArgs e)
+    {
+        if (cboMunicipio.SelectedItem is not null && cboMunicipio.Text == cboMunicipio.SelectedItem.ToString())
+        {
+            return;
+        }
+
+        var indice = cboMunicipio.FindStringExact(cboMunicipio.Text);
+        cboMunicipio.SelectedIndex = indice;
+        if (indice < 0)
+        {
+            cboMunicipio.Text = string.Empty;
+        }
+    }
+
     /// <summary>Logradouro.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

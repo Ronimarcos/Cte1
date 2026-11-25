@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios;
 
@@ -9,16 +9,16 @@ namespace Emissor.WinForms.Formularios;
 /// </summary>
 public partial class FormSelecaoEmpresa : Form
 {
-    private readonly EmpresaPrototipo? _empresaAtual;
+    private readonly int? _empresaAtualId;
 
     /// <summary>Cria o diálogo com a lista de empresas disponíveis.</summary>
     /// <param name="empresas">Empresas exibidas na grade.</param>
-    /// <param name="empresaAtual">Empresa já ativa, que fica pré-selecionada (opcional).</param>
-    public FormSelecaoEmpresa(IReadOnlyList<EmpresaPrototipo> empresas, EmpresaPrototipo? empresaAtual = null)
+    /// <param name="empresaAtualId">Empresa já ativa, que fica pré-selecionada (opcional).</param>
+    public FormSelecaoEmpresa(IReadOnlyList<EmpresaResumo> empresas, int? empresaAtualId = null)
     {
         InitializeComponent();
         AtalhosTeclado.ConfigurarDialogo(this, salvar: null);
-        _empresaAtual = empresaAtual;
+        _empresaAtualId = empresaAtualId;
         dgvEmpresas.AutoGenerateColumns = false;
         dgvEmpresas.DataSource = empresas.ToList();
         dgvEmpresas.KeyDown += dgvEmpresas_KeyDown;
@@ -27,7 +27,7 @@ public partial class FormSelecaoEmpresa : Form
     /// <summary>Empresa escolhida; preenchida somente quando o diálogo retorna <see cref="DialogResult.OK"/>.</summary>
     [Browsable(false)]
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public EmpresaPrototipo? EmpresaSelecionada { get; private set; }
+    public EmpresaResumo? EmpresaSelecionada { get; private set; }
 
     private void FormSelecaoEmpresa_Shown(object? sender, EventArgs e) => SelecionarEmpresaAtual();
 
@@ -59,14 +59,14 @@ public partial class FormSelecaoEmpresa : Form
     /// <summary>Posiciona a grade na empresa já ativa, quando houver.</summary>
     private void SelecionarEmpresaAtual()
     {
-        if (_empresaAtual is null)
+        if (_empresaAtualId is null)
         {
             return;
         }
 
         foreach (DataGridViewRow linha in dgvEmpresas.Rows)
         {
-            if (linha.DataBoundItem is EmpresaPrototipo empresa && empresa.Id == _empresaAtual.Id)
+            if (linha.DataBoundItem is EmpresaResumo empresa && empresa.Id == _empresaAtualId)
             {
                 dgvEmpresas.CurrentCell = linha.Cells[0];
                 return;
@@ -77,7 +77,7 @@ public partial class FormSelecaoEmpresa : Form
     /// <summary>Confirma a empresa da linha atual e fecha o diálogo com OK.</summary>
     private void ConfirmarSelecao()
     {
-        if (dgvEmpresas.CurrentRow?.DataBoundItem is not EmpresaPrototipo empresa)
+        if (dgvEmpresas.CurrentRow?.DataBoundItem is not EmpresaResumo empresa)
         {
             MessageBox.Show(this, "Selecione uma empresa na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;

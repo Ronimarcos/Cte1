@@ -192,7 +192,7 @@ O número de averbação (`nAver`) é por viagem/documento, não por apólice; f
 
 ### 5.9 Tabelas globais (sem `EmpresaId`)
 
-- **Municipio**: código IBGE, nome, UF (carga inicial a partir da tabela oficial do IBGE).
+- **Municipio**: código IBGE, nome, UF. Carga inicial a partir da lista oficial do IBGE (5.571 municípios, CSV embutido em `Emissor.Dados/Recursos`), feita na primeira abertura, sem internet.
 - **CFOP**: código e descrição dos CFOP de transporte.
 - **ResponsavelTecnico**: CNPJ, contato, e-mail, fone, idCSRT e CSRT (grupo `infRespTec`). Confirmar com a SEFAZ-MT se o CSRT é exigido.
 
@@ -276,6 +276,8 @@ Referência de usabilidade vista (fluxo de emissão de outro emissor web), usada
 | Fatia | Conteúdo | Situação |
 |---|---|---|
 | P1 | Entidades dos cadastros e regras de validação em `Emissor.Dominio`; `EmissorDbContext`, configurações, `RepositorioCadastro<T>` e migração `Inicial` em `Emissor.Dados`; testes com SQLite em memória | Concluída (telas ainda usam dados fictícios) |
-| P2 | Ligar as telas de cadastro ao banco (injeção de dependência, `async`), carga oficial dos municípios do IBGE, dados de demonstração opcionais, `appsettings.json` | Pendente |
+| P2a | Banco preparado na abertura (migrações, `appsettings.json` com `Banco:Caminho`, vazio = padrão), injeção de dependência (`IDbContextFactory`, um contexto por operação), carga dos 5.571 municípios do IBGE (CSV embutido, baixado em 25/11/2026 da API `servicodados.ibge.gov.br`), dados de demonstração oferecidos com o banco sem empresas, cadastro e seleção de empresa no banco (CNPJ ou CPF; município com digitação e sugestões). A lista genérica de cadastros passou a ser assíncrona. Ponte provisória `EmpresaPrototipo.DeEntidade` para os assistentes | Concluída |
+| P2b | Demais cadastros no banco: participantes, veículos, proprietários, motoristas, apólices, séries e certificados (sem criptografia, que é da P3) | Pendente |
+| P2c | Assistentes de CT-e e MDF-e lendo os cadastros do banco (documentos continuam em memória até a P4); remove a ponte provisória | Pendente |
 | P3 | Certificado real: A1 criptografado e A3 pelo repositório do Windows, atrás de `IProvedorCertificado` | Pendente |
 | P4 | CT-e e MDF-e gravados no banco, junto com o motor DF-e | Pendente |

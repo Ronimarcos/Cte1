@@ -1,31 +1,43 @@
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cadastros;
 
-/// <summary>Diálogo de inclusão e edição da empresa emitente (§5.1).</summary>
+/// <summary>
+/// Diálogo de inclusão e edição da empresa emitente (§5.1), gravada no banco. O emitente tem CNPJ (inclusive
+/// alfanumérico) ou CPF. A gravação acontece aqui, pelo delegado recebido, para que uma recusa do banco
+/// (ex.: CNPJ já cadastrado) mantenha o diálogo aberto com o que foi digitado.
+/// </summary>
 public partial class FormEdicaoEmpresa : Form
 {
-    private readonly EmpresaPrototipo _empresa;
-    private readonly bool _homologacaoOriginal;
+    private readonly Empresa _empresa;
+    private readonly Func<Empresa, Task> _gravar;
+    private readonly bool _producaoOriginal;
 
     /// <summary>Cria o diálogo sobre a cópia do registro.</summary>
-    /// <param name="empresa">Cópia editável do registro.</param>
+    /// <param name="empresa">Cópia editável da empresa.</param>
     /// <param name="novo">Verdadeiro para inclusão.</param>
-    internal FormEdicaoEmpresa(EmpresaPrototipo empresa, bool novo)
+    /// <param name="municipios">Municípios do IBGE para a escolha do endereço.</param>
+    /// <param name="gravar">Inclui ou altera a empresa no banco.</param>
+    internal FormEdicaoEmpresa(Empresa empresa, bool novo, CatalogoMunicipios municipios, Func<Empresa, Task> gravar)
     {
         InitializeComponent();
         AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _empresa = empresa;
-        _homologacaoOriginal = empresa.Homologacao;
+        _gravar = gravar;
+        _producaoOriginal = empresa.AmbientePadrao == TipoAmbiente.Producao;
         Text = novo ? "Nova empresa" : "Editar empresa";
         cboCrt.Carregar(OpcoesCadastro.Crts);
         cboRegimeIbsCbs.Carregar(OpcoesCadastro.RegimesIbsCbs);
         cboAmbiente.Carregar(OpcoesCadastro.Ambientes);
+        ucEndereco.CarregarMunicipios(municipios.Opcoes);
         CarregarCampos();
     }
 
-    private void btnSalvar_Click(object? sender, EventArgs e) => Salvar();
+    private async void btnSalvar_Click(object? sender, EventArgs e) => await SalvarAsync();
 
     /// <summary>O regime de IBS/CBS é opcional: a tecla Delete limpa a escolha.</summary>
     private void cboRegimeIbsCbs_KeyDown(object? sender, KeyEventArgs e)
@@ -37,63 +49,70 @@ public partial class FormEdicaoEmpresa : Form
         }
     }
 
+    /// <summary>CNPJ aceita letras (CNPJ alfanumérico) e tem até 18 caracteres com máscara; CPF tem até 14.</summary>
+    private void rdoDocumento_CheckedChanged(object? sender, EventArgs e) => txtCnpj.MaxLength = rdoCpf.Checked ? 14 : 18;
+
     private void CarregarCampos()
     {
         txtRazaoSocial.Text = _empresa.RazaoSocial;
         txtNomeFantasia.Text = _empresa.NomeFantasia;
-        txtCnpj.Text = _empresa.Cnpj;
+        rdoCpf.Checked = _empresa.Cpf.Length > 0;
+        rdoCnpj.Checked = !rdoCpf.Checked;
+        txtCnpj.Text = rdoCpf.Checked ? Formatador.Cpf(_empresa.Cpf) : Formatador.Cnpj(_empresa.Cnpj);
         txtIe.Text = _empresa.Ie;
         txtIeSt.Text = _empresa.IeSt;
         txtRntrc.Text = _empresa.Rntrc;
         cboCrt.Selecionar(_empresa.Crt);
         cboRegimeIbsCbs.Selecionar(_empresa.RegimeIbsCbs);
-        ucEndereco.Logradouro = _empresa.Logradouro;
-        ucEndereco.Numero = _empresa.Numero;
-        ucEndereco.Complemento = _empresa.Complemento;
-        ucEndereco.Bairro = _empresa.Bairro;
-        ucEndereco.MunicipioCodigo = _empresa.MunicipioCodigo;
-        ucEndereco.Cep = _empresa.Cep;
+        ucEndereco.Logradouro = _empresa.Endereco.Logradouro;
+        ucEndereco.Numero = _empresa.Endereco.Numero;
+        ucEndereco.Complemento = _empresa.Endereco.Complemento;
+        ucEndereco.Bairro = _empresa.Endereco.Bairro;
+        ucEndereco.MunicipioCodigo = _empresa.Endereco.MunicipioCodigo;
+        ucEndereco.Cep = Formatador.Cep(_empresa.Endereco.Cep);
         txtFone.Text = _empresa.Fone;
         txtEmail.Text = _empresa.Email;
-        cboAmbiente.Selecionar<bool>(_empresa.Homologacao);
+        cboAmbiente.Selecionar<bool>(_empresa.AmbientePadrao == TipoAmbiente.Homologacao);
     }
 
+    /// <summary>Copia os campos para a empresa, já sem máscara (o banco guarda só letras e dígitos).</summary>
     private void LerCampos()
     {
         _empresa.RazaoSocial = txtRazaoSocial.Text.Trim();
         _empresa.NomeFantasia = txtNomeFantasia.Text.Trim();
-        _empresa.Cnpj = txtCnpj.Text.Trim();
-        _empresa.Ie = txtIe.Text.Trim();
-        _empresa.IeSt = txtIeSt.Text.Trim();
-        _empresa.Rntrc = txtRntrc.Text.Trim();
+        _empresa.Cnpj = rdoCnpj.Checked ? Formatos.SoAlfanumericos(txtCnpj.Text) : string.Empty;
+        _empresa.Cpf = rdoCpf.Checked ? Formatos.SoDigitos(txtCnpj.Text) : string.Empty;
+        _empresa.Ie = Formatos.SoDigitos(txtIe.Text);
+        _empresa.IeSt = Formatos.SoDigitos(txtIeSt.Text);
+        _empresa.Rntrc = Formatos.SoDigitos(txtRntrc.Text);
         _empresa.Crt = cboCrt.ValorSelecionado<Crt>();
         _empresa.RegimeIbsCbs = cboRegimeIbsCbs.ValorSelecionado<RegimeIbsCbs>();
-        _empresa.Logradouro = ucEndereco.Logradouro;
-        _empresa.Numero = ucEndereco.Numero;
-        _empresa.Complemento = ucEndereco.Complemento;
-        _empresa.Bairro = ucEndereco.Bairro;
-        _empresa.MunicipioCodigo = ucEndereco.MunicipioCodigo;
-        _empresa.Cep = ucEndereco.Cep;
-        _empresa.Fone = txtFone.Text.Trim();
+        _empresa.Endereco.Logradouro = ucEndereco.Logradouro;
+        _empresa.Endereco.Numero = ucEndereco.Numero;
+        _empresa.Endereco.Complemento = ucEndereco.Complemento;
+        _empresa.Endereco.Bairro = ucEndereco.Bairro;
+        _empresa.Endereco.MunicipioCodigo = ucEndereco.MunicipioCodigo;
+        _empresa.Endereco.Cep = Formatos.SoDigitos(ucEndereco.Cep);
+        _empresa.Fone = Formatos.SoDigitos(txtFone.Text);
         _empresa.Email = txtEmail.Text.Trim();
 
         // Sem escolha, mantém homologação: o ambiente seguro é o padrão.
-        _empresa.Homologacao = cboAmbiente.ValorSelecionado<bool>() ?? true;
+        _empresa.AmbientePadrao = cboAmbiente.ValorSelecionado<bool>() is false ? TipoAmbiente.Producao : TipoAmbiente.Homologacao;
     }
 
     /// <summary>
-    /// Copia os campos para o registro e fecha com OK se os obrigatórios estiverem preenchidos.
-    /// A troca para produção exige confirmação, pois documentos emitidos nela têm validade fiscal.
+    /// Valida, pede confirmação ao passar para produção e grava. Se o banco recusar, mostra o motivo e
+    /// mantém o diálogo aberto.
     /// </summary>
-    private void Salvar()
+    private async Task SalvarAsync()
     {
         LerCampos();
-        if (AvisosCadastro.HaPendencias(this, Text, _empresa.ValidarObrigatorios()))
+        if (AvisosCadastro.HaPendencias(this, Text, _empresa.Validar()))
         {
             return;
         }
 
-        if (_homologacaoOriginal && !_empresa.Homologacao)
+        if (!_producaoOriginal && _empresa.AmbientePadrao == TipoAmbiente.Producao)
         {
             var resposta = MessageBox.Show(this,
                 "O ambiente padrão será alterado para PRODUÇÃO. Os documentos emitidos nesse ambiente terão validade fiscal." +
@@ -105,6 +124,21 @@ public partial class FormEdicaoEmpresa : Form
             }
         }
 
-        DialogResult = DialogResult.OK;
+        btnSalvar.Enabled = false;
+        UseWaitCursor = true;
+        try
+        {
+            await _gravar(_empresa);
+            DialogResult = DialogResult.OK;
+        }
+        catch (RegraNegocioException erro)
+        {
+            AvisosCadastro.HaPendencias(this, Text, erro.Pendencias);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            btnSalvar.Enabled = true;
+        }
     }
 }

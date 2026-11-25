@@ -1,4 +1,4 @@
-namespace Emissor.WinForms.Formularios.Cadastros;
+﻿namespace Emissor.WinForms.Formularios.Cadastros;
 
 partial class FormEdicaoEmpresa
 {
@@ -32,7 +32,8 @@ partial class FormEdicaoEmpresa
         txtRazaoSocial = new TextBox();
         lblNomeFantasia = new Label();
         txtNomeFantasia = new TextBox();
-        lblCnpj = new Label();
+        rdoCnpj = new RadioButton();
+        rdoCpf = new RadioButton();
         txtCnpj = new TextBox();
         lblIe = new Label();
         txtIe = new TextBox();
@@ -91,14 +92,29 @@ partial class FormEdicaoEmpresa
         txtNomeFantasia.Size = new Size(616, 23);
         txtNomeFantasia.TabIndex = 3;
         //
-        // lblCnpj
+        // rdoCnpj
         //
-        lblCnpj.AutoSize = true;
-        lblCnpj.Location = new Point(12, 112);
-        lblCnpj.Name = "lblCnpj";
-        lblCnpj.Size = new Size(43, 15);
-        lblCnpj.TabIndex = 4;
-        lblCnpj.Text = "CNPJ *";
+        rdoCnpj.AutoSize = true;
+        rdoCnpj.Checked = true;
+        rdoCnpj.Location = new Point(12, 110);
+        rdoCnpj.Name = "rdoCnpj";
+        rdoCnpj.Size = new Size(62, 19);
+        rdoCnpj.TabIndex = 4;
+        rdoCnpj.TabStop = true;
+        rdoCnpj.Text = "CNPJ *";
+        rdoCnpj.UseVisualStyleBackColor = true;
+        rdoCnpj.CheckedChanged += rdoDocumento_CheckedChanged;
+        //
+        // rdoCpf
+        //
+        rdoCpf.AutoSize = true;
+        rdoCpf.Location = new Point(84, 110);
+        rdoCpf.Name = "rdoCpf";
+        rdoCpf.Size = new Size(54, 19);
+        rdoCpf.TabIndex = 4;
+        rdoCpf.Text = "CPF *";
+        rdoCpf.UseVisualStyleBackColor = true;
+        rdoCpf.CheckedChanged += rdoDocumento_CheckedChanged;
         //
         // txtCnpj
         //
@@ -299,7 +315,8 @@ partial class FormEdicaoEmpresa
         Controls.Add(txtRazaoSocial);
         Controls.Add(lblNomeFantasia);
         Controls.Add(txtNomeFantasia);
-        Controls.Add(lblCnpj);
+        Controls.Add(rdoCnpj);
+        Controls.Add(rdoCpf);
         Controls.Add(txtCnpj);
         Controls.Add(lblIe);
         Controls.Add(txtIe);
@@ -337,7 +354,8 @@ partial class FormEdicaoEmpresa
     private TextBox txtRazaoSocial;
     private Label lblNomeFantasia;
     private TextBox txtNomeFantasia;
-    private Label lblCnpj;
+    private RadioButton rdoCnpj;
+    private RadioButton rdoCpf;
     private TextBox txtCnpj;
     private Label lblIe;
     private TextBox txtIe;

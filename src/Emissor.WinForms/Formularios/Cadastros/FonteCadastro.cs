@@ -5,7 +5,8 @@ namespace Emissor.WinForms.Formularios.Cadastros;
 
 /// <summary>
 /// Implementação base de <see cref="IFonteCadastro"/> sobre um <see cref="RepositorioMemoria{T}"/>:
-/// cuida da pesquisa, da cópia para edição e da confirmação de exclusão.
+/// cuida da pesquisa, da cópia para edição e da confirmação de exclusão. Usada pelos cadastros que ainda estão
+/// em memória (até a fatia P2b); responde às operações assíncronas na hora.
 /// </summary>
 /// <typeparam name="T">Tipo de registro do cadastro.</typeparam>
 internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroPrototipo
@@ -27,7 +28,23 @@ internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroProt
     protected abstract string NomeRegistro { get; }
 
     /// <inheritdoc />
-    public IList Listar(string pesquisa)
+    public Task<IList> ListarAsync(string pesquisa) => Task.FromResult(Listar(pesquisa));
+
+    /// <inheritdoc />
+    public int IdDe(object registro) => ((RegistroPrototipo)registro).Id;
+
+    /// <inheritdoc />
+    public Task<int?> NovoAsync(IWin32Window dono) => Task.FromResult(Novo(dono));
+
+    /// <inheritdoc />
+    public Task<bool> EditarAsync(IWin32Window dono, object registro) => Task.FromResult(Editar(dono, registro));
+
+    /// <inheritdoc />
+    public Task<bool> ExcluirAsync(IWin32Window dono, object registro) => Task.FromResult(Excluir(dono, registro));
+
+    /// <summary>Registros que contêm o texto pesquisado.</summary>
+    /// <param name="pesquisa">Texto digitado.</param>
+    private IList Listar(string pesquisa)
     {
         var termo = pesquisa.Trim();
         return Repositorio
@@ -36,8 +53,8 @@ internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroProt
             .ToList();
     }
 
-    /// <inheritdoc />
-    public int? Novo(IWin32Window dono)
+    /// <summary>Inclusão em memória.</summary>
+    private int? Novo(IWin32Window dono)
     {
         var item = CriarNovo();
         if (!AbrirEdicao(dono, item, novo: true))
@@ -50,8 +67,8 @@ internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroProt
         return item.Id;
     }
 
-    /// <inheritdoc />
-    public bool Editar(IWin32Window dono, object registro)
+    /// <summary>Edição em memória.</summary>
+    private bool Editar(IWin32Window dono, object registro)
     {
         if (registro is not T atual || Repositorio.ObterPorId(atual.Id) is not { } copia)
         {
@@ -68,8 +85,8 @@ internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroProt
         return true;
     }
 
-    /// <inheritdoc />
-    public bool Excluir(IWin32Window dono, object registro)
+    /// <summary>Exclusão em memória.</summary>
+    private bool Excluir(IWin32Window dono, object registro)
     {
         if (registro is not T item)
         {

@@ -12,6 +12,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.15" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Lista oficial de municípios do IBGE (API servicodados.ibge.gov.br), carregada na primeira abertura. -->
+    <EmbeddedResource Include="Recursos\municipios-ibge.csv" LogicalName="Emissor.Dados.municipios-ibge.csv" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
