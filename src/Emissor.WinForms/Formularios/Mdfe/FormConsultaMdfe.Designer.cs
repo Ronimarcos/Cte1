@@ -49,6 +49,7 @@ partial class FormConsultaMdfe
         btnIncluirCondutor = new Button();
         btnIncluirDfe = new Button();
         btnFechar = new Button();
+        btnXmlTeste = new Button();
         pnlFiltros.SuspendLayout();
         pnlRodape.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)dgvMdfes).BeginInit();
@@ -206,6 +207,7 @@ partial class FormConsultaMdfe
         pnlRodape.Controls.Add(btnIncluirCondutor);
         pnlRodape.Controls.Add(btnIncluirDfe);
         pnlRodape.Controls.Add(btnFechar);
+        pnlRodape.Controls.Add(btnXmlTeste);
         pnlRodape.Dock = DockStyle.Bottom;
         pnlRodape.Location = new Point(0, 476);
         pnlRodape.Name = "pnlRodape";
@@ -281,6 +283,17 @@ partial class FormConsultaMdfe
         btnFechar.UseVisualStyleBackColor = true;
         btnFechar.Click += btnFechar_Click;
         //
+        // btnXmlTeste
+        //
+        btnXmlTeste.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        btnXmlTeste.Location = new Point(742, 8);
+        btnXmlTeste.Name = "btnXmlTeste";
+        btnXmlTeste.Size = new Size(150, 27);
+        btnXmlTeste.TabIndex = 7;
+        btnXmlTeste.Text = "&Gerar XML de teste";
+        btnXmlTeste.UseVisualStyleBackColor = true;
+        btnXmlTeste.Click += btnXmlTeste_Click;
+        //
         // FormConsultaMdfe
         //
         AutoScaleDimensions = new SizeF(7F, 15F);
@@ -323,4 +336,5 @@ partial class FormConsultaMdfe
     private Button btnIncluirCondutor;
     private Button btnIncluirDfe;
     private Button btnFechar;
+    private Button btnXmlTeste;
 }

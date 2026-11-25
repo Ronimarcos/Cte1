@@ -90,6 +90,6 @@ Preferências do responsável pelo projeto:
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.
     - [x] P4a: CT-e e MDF-e gravados no banco (rascunho e pronto para transmitir), sem XML nem SEFAZ.
     - [x] P4b1: motor DF-e offline do CT-e (classes do XSD, chave, XML, assinatura, validação; "Gerar XML de teste").
-    - [ ] P4b2: motor DF-e offline do MDF-e.
+    - [x] P4b2: motor DF-e offline do MDF-e (classes do XSD, XML, assinatura, validação; IE/UF do proprietário).
     - [ ] P4c: transmissão em homologação e numeração da série.
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).

@@ -36,6 +36,10 @@ partial class FormEdicaoProprietarioVeiculo
         cboTipoProprietario = new ComboBox();
         lblNome = new Label();
         txtNome = new TextBox();
+        lblIe = new Label();
+        txtIe = new TextBox();
+        lblUf = new Label();
+        cboUf = new ComboBox();
         pnlBotoes = new Panel();
         btnSalvar = new Button();
         btnCancelar = new Button();
@@ -108,8 +112,45 @@ partial class FormEdicaoProprietarioVeiculo
         txtNome.Location = new Point(12, 80);
         txtNome.MaxLength = 60;
         txtNome.Name = "txtNome";
-        txtNome.Size = new Size(496, 23);
+        txtNome.Size = new Size(300, 23);
         txtNome.TabIndex = 7;
+        //
+        // lblIe
+        //
+        lblIe.AutoSize = true;
+        lblIe.Location = new Point(324, 62);
+        lblIe.Name = "lblIe";
+        lblIe.Size = new Size(17, 15);
+        lblIe.TabIndex = 8;
+        lblIe.Text = "IE";
+        //
+        // txtIe
+        //
+        txtIe.CharacterCasing = CharacterCasing.Upper;
+        txtIe.Location = new Point(324, 80);
+        txtIe.MaxLength = 14;
+        txtIe.Name = "txtIe";
+        txtIe.PlaceholderText = "ou ISENTO";
+        txtIe.Size = new Size(110, 23);
+        txtIe.TabIndex = 9;
+        //
+        // lblUf
+        //
+        lblUf.AutoSize = true;
+        lblUf.Location = new Point(446, 62);
+        lblUf.Name = "lblUf";
+        lblUf.Size = new Size(30, 15);
+        lblUf.TabIndex = 10;
+        lblUf.Text = "UF *";
+        //
+        // cboUf
+        //
+        cboUf.DropDownStyle = ComboBoxStyle.DropDownList;
+        cboUf.FormattingEnabled = true;
+        cboUf.Location = new Point(446, 80);
+        cboUf.Name = "cboUf";
+        cboUf.Size = new Size(62, 23);
+        cboUf.TabIndex = 11;
         //
         // pnlBotoes
         //
@@ -119,7 +160,7 @@ partial class FormEdicaoProprietarioVeiculo
         pnlBotoes.Location = new Point(0, 122);
         pnlBotoes.Name = "pnlBotoes";
         pnlBotoes.Size = new Size(520, 48);
-        pnlBotoes.TabIndex = 8;
+        pnlBotoes.TabIndex = 12;
         //
         // btnSalvar
         //
@@ -158,6 +199,10 @@ partial class FormEdicaoProprietarioVeiculo
         Controls.Add(cboTipoProprietario);
         Controls.Add(lblNome);
         Controls.Add(txtNome);
+        Controls.Add(lblIe);
+        Controls.Add(txtIe);
+        Controls.Add(lblUf);
+        Controls.Add(cboUf);
         Controls.Add(pnlBotoes);
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
@@ -181,6 +226,10 @@ partial class FormEdicaoProprietarioVeiculo
     private ComboBox cboTipoProprietario;
     private Label lblNome;
     private TextBox txtNome;
+    private Label lblIe;
+    private TextBox txtIe;
+    private Label lblUf;
+    private ComboBox cboUf;
     private Panel pnlBotoes;
     private Button btnSalvar;
     private Button btnCancelar;

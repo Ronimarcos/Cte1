@@ -1,10 +1,9 @@
-using System.Globalization;
 using System.Xml;
-using System.Xml.Serialization;
 using Emissor.DFe.Leiaute;
 using Emissor.DFe.Leiaute.Cte;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using static Emissor.DFe.FormatacaoLeiaute;
 
 namespace Emissor.DFe.Cte;
 
@@ -48,8 +47,8 @@ public static class MontadorCte
     /// <summary>Versão do leiaute do modal rodoviário.</summary>
     public const string VersaoModal = "4.00";
 
-    private const string NamespaceCte = "http://www.portalfiscal.inf.br/cte";
-    private static readonly CultureInfo Invariante = CultureInfo.InvariantCulture;
+    /// <summary>Namespace do leiaute do CT-e.</summary>
+    public const string NamespaceCte = "http://www.portalfiscal.inf.br/cte";
 
     /// <summary>Monta o CT-e; as pendências dizem o que falta nos cadastros ou no documento.</summary>
     /// <param name="dados">CT-e, empresa e cadastros.</param>
@@ -100,13 +99,13 @@ public static class MontadorCte
             Ide = new TcTeInfCteIde
             {
                 Cuf = LeiauteEnum.De<TCodUfIbge>(codigoUf, 2),
-                Cct = codigoNumerico.ToString("00000000", Invariante),
+                Cct = codigoNumerico.ToString("00000000", System.Globalization.CultureInfo.InvariantCulture),
                 Cfop = cte.Cfop,
                 NatOp = Texto(cte.NaturezaOperacao),
                 Mod = TModCt.Item57,
-                Serie = dados.Serie.Serie.ToString(Invariante),
-                Nct = dados.Numero.ToString(Invariante),
-                DhEmi = dados.DataHoraEmissao.ToString("yyyy-MM-dd'T'HH:mm:sszzz", Invariante),
+                Serie = dados.Serie.Serie.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Nct = dados.Numero.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                DhEmi = DataHora(dados.DataHoraEmissao),
                 TpImp = TcTeInfCteIdeTpImp.Item1,
                 TpEmis = TcTeInfCteIdeTpEmis.Item1,
                 Cdv = chave[^1..],
@@ -114,15 +113,15 @@ public static class MontadorCte
                 TpCTe = LeiauteEnum.De<TFinCTe>((int)cte.Tipo!.Value),
                 ProcEmi = TProcEmiCTe.Item0,
                 VerProc = dados.VersaoAplicativo.Length > 20 ? dados.VersaoAplicativo[..20] : dados.VersaoAplicativo,
-                CMunEnv = municipioEmpresa.Codigo.ToString(Invariante),
+                CMunEnv = municipioEmpresa.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 XMunEnv = Texto(municipioEmpresa.Nome),
                 UfEnv = LeiauteEnum.De<TUf>(municipioEmpresa.Uf),
                 Modal = TModTransp.Item01,
                 TpServ = LeiauteEnum.De<TcTeInfCteIdeTpServ>((int)cte.TipoServico!.Value),
-                CMunIni = inicio.Codigo.ToString(Invariante),
+                CMunIni = inicio.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 XMunIni = Texto(inicio.Nome),
                 UfIni = LeiauteEnum.De<TUf>(inicio.Uf),
-                CMunFim = fim.Codigo.ToString(Invariante),
+                CMunFim = fim.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 XMunFim = Texto(fim.Nome),
                 UfFim = LeiauteEnum.De<TUf>(fim.Uf),
                 Retira = TcTeInfCteIdeRetira.Item1,
@@ -210,18 +209,7 @@ public static class MontadorCte
 
     /// <summary>Serializa o CT-e montado (sem assinatura) num documento XML, sem os namespaces xsi/xsd.</summary>
     /// <param name="documento">CT-e montado.</param>
-    public static XmlDocument Serializar(TcTe documento)
-    {
-        var namespaces = new XmlSerializerNamespaces();
-        namespaces.Add(string.Empty, NamespaceCte);
-        var xml = new XmlDocument { PreserveWhitespace = false };
-        using (var escritor = xml.CreateNavigator()!.AppendChild())
-        {
-            new XmlSerializer(typeof(TcTe)).Serialize(escritor, documento, namespaces);
-        }
-
-        return xml;
-    }
+    public static XmlDocument Serializar(TcTe documento) => FormatacaoLeiaute.Serializar(documento, NamespaceCte);
 
     private static TcTeInfCteInfCTeNorm Normal(ConhecimentoTransporte cte, Empresa empresa)
     {
@@ -246,7 +234,7 @@ public static class MontadorCte
             {
                 CUnid = LeiauteEnum.De<TcTeInfCteInfCTeNormInfCargaInfQcUnid>((int)quantidade.Unidade, 2),
                 TpMed = Texto(quantidade.TipoMedida),
-                QCarga = quantidade.Quantidade.ToString("0.0000", Invariante),
+                QCarga = Quantidade(quantidade.Quantidade),
             });
         }
 
@@ -281,20 +269,7 @@ public static class MontadorCte
     }
 
     /// <summary>Grupo <c>rodo</c> do modal rodoviário, serializado à parte para ir em <c>infModal</c>.</summary>
-    private static XmlElement Rodoviario(Empresa empresa)
-    {
-        var namespaces = new XmlSerializerNamespaces();
-        namespaces.Add(string.Empty, NamespaceCte);
-        var xml = new XmlDocument();
-        using (var escritor = xml.CreateNavigator()!.AppendChild())
-        {
-            new XmlSerializer(typeof(Rodo)).Serialize(escritor, new Rodo { Rntrc = empresa.Rntrc }, namespaces);
-        }
-
-        // O namespace é o mesmo do CT-e: tira a declaração repetida, que iria para dentro de infModal.
-        xml.DocumentElement!.RemoveAttribute("xmlns");
-        return xml.DocumentElement;
-    }
+    private static XmlElement Rodoviario(Empresa empresa) => Elemento(new Rodo { Rntrc = empresa.Rntrc }, NamespaceCte);
 
     private static TcTeInfCteEmit Emitente(Empresa empresa, Municipio municipio) => new()
     {
@@ -309,7 +284,7 @@ public static class MontadorCte
             Nro = Texto(empresa.Endereco.Numero),
             XCpl = Opcional(empresa.Endereco.Complemento),
             XBairro = Texto(empresa.Endereco.Bairro),
-            CMun = municipio.Codigo.ToString(Invariante),
+            CMun = municipio.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
             XMun = Texto(municipio.Nome),
             Cep = Opcional(empresa.Endereco.Cep),
             Uf = LeiauteEnum.De<TufSemEx>(municipio.Uf),
@@ -340,7 +315,7 @@ public static class MontadorCte
             Nro = Texto(participante.Endereco.Numero),
             XCpl = Opcional(participante.Endereco.Complemento),
             XBairro = Texto(participante.Endereco.Bairro),
-            CMun = municipio.Codigo.ToString(Invariante),
+            CMun = municipio.Codigo.ToString(System.Globalization.CultureInfo.InvariantCulture),
             XMun = Texto(municipio.Nome),
             Cep = Opcional(participante.Endereco.Cep),
             Uf = LeiauteEnum.De<TUf>(municipio.Uf),
@@ -386,11 +361,4 @@ public static class MontadorCte
         return participante;
     }
 
-    /// <summary>Texto sem espaços nas pontas e sem espaços repetidos (o leiaute não aceita).</summary>
-    private static string Texto(string texto) => string.Join(' ', texto.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-
-    private static string? Opcional(string? texto) => string.IsNullOrWhiteSpace(texto) ? null : Texto(texto);
-
-    /// <summary>Valor com duas casas e ponto decimal (<c>TDec_1302</c>).</summary>
-    private static string Valor(decimal valor) => valor.ToString("0.00", Invariante);
 }

@@ -1,3 +1,4 @@
+using Emissor.DFe;
 using Emissor.DFe.Cte;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;

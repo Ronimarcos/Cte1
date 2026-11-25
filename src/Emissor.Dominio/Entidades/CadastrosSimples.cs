@@ -18,6 +18,22 @@ public class ProprietarioVeiculo : EntidadeDaEmpresa
     /// <summary>Tipo do proprietário (<c>prop/tpProp</c>).</summary>
     public TipoProprietario? TipoProprietario { get; set; }
 
+    /// <summary>
+    /// Inscrição Estadual (<c>prop/IE</c>, tipo <c>TIeDest</c>): só dígitos, "ISENTO" ou vazia.
+    /// </summary>
+    public string Ie { get; set; } = string.Empty;
+
+    /// <summary>UF do proprietário (<c>prop/UF</c>).</summary>
+    public string Uf { get; set; } = string.Empty;
+
+    /// <summary>IE como o leiaute aceita: "ISENTO" em maiúsculas ou só os dígitos.</summary>
+    /// <param name="texto">IE digitada.</param>
+    public static string NormalizarIe(string? texto)
+    {
+        var limpo = (texto ?? string.Empty).Trim().ToUpperInvariant();
+        return limpo == "ISENTO" ? limpo : Formatos.SoDigitos(limpo);
+    }
+
     /// <inheritdoc />
     public override IReadOnlyList<string> Validar()
     {
@@ -26,6 +42,8 @@ public class ProprietarioVeiculo : EntidadeDaEmpresa
         if (!Formatos.RntrcValido(Rntrc)) faltando.Add("RNTRC com 8 dígitos");
         if (string.IsNullOrWhiteSpace(Nome)) faltando.Add("Nome");
         if (TipoProprietario is null) faltando.Add("Tipo do proprietário");
+        if (Ie.Length > 0 && Ie != "ISENTO" && !Formatos.IeValida(Ie)) faltando.Add("IE com 2 a 14 dígitos ou ISENTO");
+        if (!Formatos.UfValida(Uf)) faltando.Add("UF");
         return faltando;
     }
 }

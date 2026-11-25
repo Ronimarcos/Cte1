@@ -1,3 +1,4 @@
+using Emissor.DFe;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
@@ -205,6 +206,8 @@ public partial class FormConsultaMdfe : Form
 
     private void btnFechar_Click(object? sender, EventArgs e) => Close();
 
+    private async void btnXmlTeste_Click(object? sender, EventArgs e) => await GerarXmlTesteAsync();
+
     /// <summary>Encerrar, cancelar, incluir condutor e incluir DF-e são eventos enviados à SEFAZ: só no motor DF-e.</summary>
     private void btnEvento_Click(object? sender, EventArgs e)
     {
@@ -319,6 +322,90 @@ public partial class FormConsultaMdfe : Form
         finally
         {
             _ocupado = false;
+        }
+    }
+
+    /// <summary>
+    /// Gera o XML do MDF-e selecionado (montado, assinado e validado contra o XSD), sem transmitir e sem reservar
+    /// número, e oferece salvar o arquivo.
+    /// </summary>
+    private async Task GerarXmlTesteAsync()
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        if (Selecionado is not { } atual)
+        {
+            MessageBox.Show(this, "Selecione um MDF-e na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        _ocupado = true;
+        UseWaitCursor = true;
+        btnXmlTeste.Enabled = false;
+        try
+        {
+            var mdfe = await _cadastros.Mdfes.ObterAsync(atual.Id)
+                ?? throw new RegraNegocioException("O MDF-e não existe mais. Atualize a lista.");
+            _cadastros = await _carregarCadastros();
+            var resultado = await _cadastros.XmlTeste.GerarMdfeAsync(mdfe, _cadastros);
+            UseWaitCursor = false;
+            await MostrarXmlTesteAsync(resultado);
+        }
+        catch (RegraNegocioException erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), "Gerar XML de teste", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, $"Não foi possível gerar o XML.{Environment.NewLine}{erro.GetBaseException().Message}",
+                "Gerar XML de teste", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            btnXmlTeste.Enabled = true;
+            _ocupado = false;
+        }
+    }
+
+    /// <summary>Mostra as pendências ou o resultado da validação e oferece salvar o XML.</summary>
+    private async Task MostrarXmlTesteAsync(XmlGerado resultado)
+    {
+        const string titulo = "Gerar XML de teste";
+        if (resultado.Xml.Length == 0)
+        {
+            AvisosCadastro.HaPendencias(this, titulo, resultado.Pendencias);
+            return;
+        }
+
+        var linha = Environment.NewLine;
+        var mensagem = resultado.Valido
+            ? $"XML assinado e válido contra o XSD do MDF-e 3.00b.{linha}{linha}Chave: {resultado.Chave}{linha}Ambiente: homologação{linha}{linha}" +
+              $"É só um teste: o número usado não foi reservado e nada foi enviado à SEFAZ.{linha}{linha}Deseja salvar o arquivo?"
+            : $"O XML foi gerado, mas não passou na validação do XSD:{linha}{linha}" +
+              string.Join(linha, resultado.Pendencias.Take(10).Select(p => $"• {p}")) +
+              (resultado.Pendencias.Count > 10 ? $"{linha}• ... e mais {resultado.Pendencias.Count - 10}" : string.Empty) +
+              $"{linha}{linha}Deseja salvar o arquivo para análise?";
+        if (MessageBox.Show(this, mensagem, titulo, MessageBoxButtons.YesNo,
+                resultado.Valido ? MessageBoxIcon.Information : MessageBoxIcon.Warning) != DialogResult.Yes)
+        {
+            return;
+        }
+
+        using var dialogo = new SaveFileDialog
+        {
+            Title = titulo,
+            Filter = "Arquivo XML (*.xml)|*.xml",
+            FileName = $"{resultado.Chave}-teste-mdfe.xml",
+        };
+        if (dialogo.ShowDialog(this) == DialogResult.OK)
+        {
+            await File.WriteAllTextAsync(dialogo.FileName, resultado.Xml, new System.Text.UTF8Encoding(false));
         }
     }
 

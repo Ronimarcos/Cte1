@@ -577,6 +577,11 @@ namespace Emissor.Dados.Migracoes
                     b.Property<int>("EmpresaId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Ie")
+                        .IsRequired()
+                        .HasMaxLength(14)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -589,6 +594,11 @@ namespace Emissor.Dados.Migracoes
 
                     b.Property<int>("TipoProprietario")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Uf")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
