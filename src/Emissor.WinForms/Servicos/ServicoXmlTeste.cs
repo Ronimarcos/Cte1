@@ -41,11 +41,13 @@ public sealed class ServicoXmlTeste
             $"Cte1 {Application.ProductVersion.Split('+')[0]}");
 
         // Leitura dos XSD e assinatura fora da tela; o A3 pode pedir o PIN.
-        return await Task.Run(() =>
+        var resultado = await Task.Run(() =>
         {
             using var x509 = ProvedoresCertificado.Criar(certificado, _servicos.Protetor).ObterCertificado();
             return GeradorXmlCte.Gerar(dados, x509);
         });
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id, Resumo("CT-e", cte.Id, resultado));
+        return resultado;
     }
 
     /// <summary>Gera o XML do MDF-e com o próximo número da série, sem reservá-lo.</summary>
@@ -72,12 +74,20 @@ public sealed class ServicoXmlTeste
             $"Cte1 {Application.ProductVersion.Split('+')[0]}");
 
         // Leitura dos XSD e assinatura fora da tela; o A3 pode pedir o PIN.
-        return await Task.Run(() =>
+        var resultado = await Task.Run(() =>
         {
             using var x509 = ProvedoresCertificado.Criar(certificado, _servicos.Protetor).ObterCertificado();
             return GeradorXmlMdfe.Gerar(dados, x509);
         });
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id, Resumo("MDF-e", mdfe.Id, resultado));
+        return resultado;
     }
+
+    /// <summary>Texto da auditoria do XML de teste.</summary>
+    private static string Resumo(string documento, int id, XmlGerado resultado) =>
+        resultado.Valido
+            ? $"XML de teste do {documento} {id}: válido (chave {resultado.Chave})"
+            : $"XML de teste do {documento} {id}: {resultado.Pendencias.Count} pendência(s)";
 
     /// <summary>Certificado da empresa dentro da validade; o de vencimento mais distante, se houver mais de um.</summary>
     /// <param name="servicos">Cadastros e certificados.</param>

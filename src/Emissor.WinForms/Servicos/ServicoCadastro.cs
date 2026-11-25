@@ -68,6 +68,7 @@ public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
 /// <param name="Protetor">Criptografia do arquivo e da senha do certificado A1.</param>
 /// <param name="Ctes">CT-e emitidos.</param>
 /// <param name="Mdfes">MDF-e emitidos.</param>
+/// <param name="Auditoria">Eventos e consulta da auditoria.</param>
 public sealed record ServicosCadastro(
     ServicoCadastro<Participante> Participantes,
     ServicoCadastro<Veiculo> Veiculos,
@@ -78,4 +79,5 @@ public sealed record ServicosCadastro(
     ServicoCadastro<CertificadoDigital> Certificados,
     IProtetorSegredos Protetor,
     ServicoDocumentos<ConhecimentoTransporte> Ctes,
-    ServicoDocumentos<ManifestoEletronico> Mdfes);
+    ServicoDocumentos<ManifestoEletronico> Mdfes,
+    ServicoAuditoria Auditoria);

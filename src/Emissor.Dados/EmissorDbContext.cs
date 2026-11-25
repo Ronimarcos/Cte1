@@ -1,4 +1,5 @@
 using Emissor.Dominio.Entidades;
+using Emissor.Dominio.Regras;
 using Microsoft.EntityFrameworkCore;
 
 namespace Emissor.Dados;
@@ -52,18 +53,57 @@ public class EmissorDbContext : DbContext
     /// <summary>Usuários do emissor.</summary>
     public DbSet<Usuario> Usuarios => Set<Usuario>();
 
+    /// <summary>Auditoria (só inclusão; o banco recusa alteração e exclusão).</summary>
+    public DbSet<RegistroAuditoria> Auditoria => Set<RegistroAuditoria>();
+
+    /// <summary>
+    /// Quem está gravando (informado pelos repositórios). Com usuário logado, toda inclusão, alteração e exclusão vira
+    /// linha de auditoria na mesma transação; sem usuário (operações internas), não há auditoria automática.
+    /// </summary>
+    public IContextoAcesso? Autor { get; set; }
+
     /// <inheritdoc />
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
         PreencherDatas();
-        return base.SaveChanges(acceptAllChangesOnSuccess);
+        var usuario = Autor?.Usuario;
+        var mudancas = usuario is null ? [] : ColetorAuditoria.Coletar(ChangeTracker);
+        if (mudancas.Count == 0)
+        {
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        using var transacao = Database.CurrentTransaction is null ? Database.BeginTransaction() : null;
+        var linhas = base.SaveChanges(acceptAllChangesOnSuccess);
+        var agora = DateTime.Now;
+        Auditoria.AddRange(mudancas.Select(m => m.Criar(usuario!, agora)));
+        base.SaveChanges(acceptAllChangesOnSuccess);
+        transacao?.Commit();
+        return linhas;
     }
 
     /// <inheritdoc />
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         PreencherDatas();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        var usuario = Autor?.Usuario;
+        var mudancas = usuario is null ? [] : ColetorAuditoria.Coletar(ChangeTracker);
+        if (mudancas.Count == 0)
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        await using var transacao = Database.CurrentTransaction is null ? await Database.BeginTransactionAsync(cancellationToken) : null;
+        var linhas = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        var agora = DateTime.Now;
+        Auditoria.AddRange(mudancas.Select(m => m.Criar(usuario!, agora)));
+        await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (transacao is not null)
+        {
+            await transacao.CommitAsync(cancellationToken);
+        }
+
+        return linhas;
     }
 
     /// <inheritdoc />

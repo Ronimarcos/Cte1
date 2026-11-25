@@ -49,6 +49,7 @@ partial class FormPrincipal
         mnuSistema = new ToolStripMenuItem();
         mnuSistemaStatusSefaz = new ToolStripMenuItem();
         mnuSistemaUsuarios = new ToolStripMenuItem();
+        mnuSistemaAuditoria = new ToolStripMenuItem();
         mnuSistemaSeparador2 = new ToolStripSeparator();
         mnuSistemaTrocarSenha = new ToolStripMenuItem();
         mnuSistemaTrocarUsuario = new ToolStripMenuItem();
@@ -201,7 +202,7 @@ partial class FormPrincipal
         //
         // mnuSistema
         //
-        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaStatusSefaz, mnuSistemaUsuarios, mnuSistemaSeparador2, mnuSistemaTrocarEmpresa, mnuSistemaTrocarSenha, mnuSistemaTrocarUsuario, mnuSistemaSeparador1, mnuSistemaSair });
+        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaStatusSefaz, mnuSistemaUsuarios, mnuSistemaAuditoria, mnuSistemaSeparador2, mnuSistemaTrocarEmpresa, mnuSistemaTrocarSenha, mnuSistemaTrocarUsuario, mnuSistemaSeparador1, mnuSistemaSair });
         mnuSistema.Name = "mnuSistema";
         mnuSistema.Size = new Size(60, 20);
         mnuSistema.Text = "&Sistema";
@@ -219,6 +220,13 @@ partial class FormPrincipal
         mnuSistemaUsuarios.Size = new Size(250, 22);
         mnuSistemaUsuarios.Text = "&Usuários";
         mnuSistemaUsuarios.Click += mnuSistemaUsuarios_Click;
+        //
+        // mnuSistemaAuditoria
+        //
+        mnuSistemaAuditoria.Name = "mnuSistemaAuditoria";
+        mnuSistemaAuditoria.Size = new Size(250, 22);
+        mnuSistemaAuditoria.Text = "&Auditoria";
+        mnuSistemaAuditoria.Click += mnuSistemaAuditoria_Click;
         //
         // mnuSistemaSeparador2
         //
@@ -340,6 +348,7 @@ partial class FormPrincipal
     private ToolStripMenuItem mnuSistema;
     private ToolStripMenuItem mnuSistemaStatusSefaz;
     private ToolStripMenuItem mnuSistemaUsuarios;
+    private ToolStripMenuItem mnuSistemaAuditoria;
     private ToolStripSeparator mnuSistemaSeparador2;
     private ToolStripMenuItem mnuSistemaTrocarSenha;
     private ToolStripMenuItem mnuSistemaTrocarUsuario;

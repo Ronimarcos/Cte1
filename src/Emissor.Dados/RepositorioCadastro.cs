@@ -38,6 +38,9 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     {
         _contexto = contexto;
         Acesso = acesso;
+
+        // O usuário da sessão vira o autor das gravações: o contexto registra a auditoria automaticamente.
+        _contexto.Autor = acesso;
     }
 
     /// <summary>Contexto do EF Core, para os repositórios derivados.</summary>
@@ -92,12 +95,21 @@ public class RepositorioCadastro<T> where T : EntidadeBase
     {
         GarantirEscrita(registro);
         Validar(registro);
-        if (!await Consulta().AnyAsync(e => e.Id == registro.Id, cancelamento))
+        var gravado = await Consulta().FirstOrDefaultAsync(e => e.Id == registro.Id, cancelamento)
+            ?? throw new RegraNegocioException("O registro não existe mais. Atualize a lista.");
+
+        // Copia sobre o registro gravado (e não Update da cópia): assim só os campos que mudaram ficam marcados, com o
+        // valor anterior verdadeiro, para a auditoria. Os grupos próprios (ex.: endereço) são copiados do mesmo jeito.
+        var entrada = _contexto.Entry(gravado);
+        entrada.CurrentValues.SetValues(registro);
+        foreach (var grupo in entrada.References.Where(r => r.Metadata.TargetEntityType.IsOwned() && r.TargetEntry is not null))
         {
-            throw new RegraNegocioException("O registro não existe mais. Atualize a lista.");
+            if (grupo.Metadata.PropertyInfo?.GetValue(registro) is { } novo)
+            {
+                grupo.TargetEntry!.CurrentValues.SetValues(novo);
+            }
         }
 
-        _contexto.Set<T>().Update(registro);
         await GravarAsync(cancelamento, "alterar");
     }
 

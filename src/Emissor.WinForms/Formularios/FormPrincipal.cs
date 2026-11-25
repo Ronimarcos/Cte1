@@ -75,6 +75,9 @@ public partial class FormPrincipal : Form
     /// <summary>Verdadeiro quando o usuário pediu "Trocar usuário": o programa volta ao login ao fechar a janela.</summary>
     public bool TrocarUsuarioSolicitado { get; private set; }
 
+    /// <summary>Empresa ativa no momento em que a janela foi fechada.</summary>
+    public int EmpresaAtivaId => _empresa.Id;
+
     /// <summary>
     /// Mostra o usuário logado e esconde do operador o que é só do administrador (empresas, certificados, usuários).
     /// A alçada também é conferida na camada de dados; aqui é só para não oferecer o que ele não pode usar.
@@ -87,9 +90,22 @@ public partial class FormPrincipal : Form
         mnuCadastrosEmpresas.Visible = administrador;
         mnuCadastrosCertificados.Visible = administrador;
         mnuSistemaUsuarios.Visible = administrador;
+        mnuSistemaAuditoria.Visible = administrador;
     }
 
     private void mnuSistemaUsuarios_Click(object? sender, EventArgs e) => AbrirCadastro(new FonteUsuarios(_acesso, _servicoEmpresas));
+
+    /// <summary>Abre a consulta da auditoria (só administrador) ou traz para frente a que já está aberta.</summary>
+    private void mnuSistemaAuditoria_Click(object? sender, EventArgs e)
+    {
+        if (MdiChildren.OfType<FormConsultaAuditoria>().FirstOrDefault() is { } aberta)
+        {
+            aberta.Activate();
+            return;
+        }
+
+        new FormConsultaAuditoria(_servicos.Auditoria, _acesso, _servicoEmpresas) { MdiParent = this }.Show();
+    }
 
     private void mnuSistemaTrocarSenha_Click(object? sender, EventArgs e)
     {
@@ -353,6 +369,7 @@ public partial class FormPrincipal : Form
         }
 
         DefinirEmpresa(escolhida);
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.EntradaEmpresa, escolhida.Id, $"Troca para a empresa {escolhida.RazaoSocial}");
     }
 
     /// <summary>Atualiza título da janela e barra de status; o ambiente fica em destaque para evitar confusão com produção.</summary>
