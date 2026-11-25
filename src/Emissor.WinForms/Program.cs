@@ -48,7 +48,7 @@ static class Program
             return;
         }
 
-        Application.Run(new FormPrincipal(empresa, empresas, municipios));
+        Application.Run(new FormPrincipal(empresa, empresas, provedor.GetRequiredService<ServicosCadastro>(), municipios));
     }
 
     /// <summary>Caminho do banco no <c>appsettings.json</c>; vazio usa o padrão (<c>C:\ProgramData\Cte1\emissor.db</c>).</summary>
@@ -69,6 +69,8 @@ static class Program
         servicos.AddDbContextFactory<EmissorDbContext>(opcoes => opcoes.UseSqlite($"Data Source={caminhoBanco}"));
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
+        servicos.AddSingleton(typeof(ServicoCadastro<>));
+        servicos.AddSingleton<ServicosCadastro>();
         return servicos.BuildServiceProvider();
     }
 
@@ -79,14 +81,20 @@ static class Program
     private static bool GarantirEmpresa(ServicoEmpresas empresas, CatalogoMunicipios municipios)
     {
         var semEmpresas = FormAguarde.Executar("Verificando as empresas...", async () => (object)await empresas.SemEmpresasAsync());
-        if (semEmpresas is not true)
+        if (semEmpresas is null)
         {
-            return semEmpresas is false;
+            return false;
+        }
+
+        if (semEmpresas is false)
+        {
+            return CompletarDemonstracao(empresas);
         }
 
         var resposta = MessageBox.Show(
             "Ainda não há empresas cadastradas." + Environment.NewLine + Environment.NewLine +
-            "Deseja carregar os dados de demonstração (empresas fictícias ALFA, BETA e GAMA)?" + Environment.NewLine +
+            "Deseja carregar os dados de demonstração (empresas fictícias ALFA, BETA e GAMA, com participantes," + Environment.NewLine +
+            "veículos, proprietários, motoristas, apólices e séries)?" + Environment.NewLine +
             "Escolha \"Não\" para cadastrar a sua empresa agora.",
             "Emissor CT-e / MDF-e", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
@@ -102,6 +110,26 @@ static class Program
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Quem carregou a demonstração na fatia P2a tem só as empresas no banco: oferece completar com os demais
+    /// cadastros de demonstração. Recusar não impede de continuar.
+    /// </summary>
+    private static bool CompletarDemonstracao(ServicoEmpresas empresas)
+    {
+        var pendente = FormAguarde.Executar("Verificando os cadastros...", async () => (object)await empresas.CadastrosDemonstracaoPendentesAsync());
+        if (pendente is not true)
+        {
+            return pendente is not null;
+        }
+
+        var resposta = MessageBox.Show(
+            "O banco tem as empresas de demonstração, mas ainda não os demais cadastros." + Environment.NewLine + Environment.NewLine +
+            "Deseja carregar os participantes, veículos, proprietários, motoristas, apólices e séries de demonstração?",
+            "Emissor CT-e / MDF-e", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+        return resposta != DialogResult.Yes
+            || FormAguarde.Executar("Carregando os dados de demonstração...", _ => empresas.CarregarDemonstracaoAsync());
     }
 
     /// <summary>Mostra a seleção de empresa e devolve a escolhida, lida do banco; <c>null</c> se o usuário desistir.</summary>

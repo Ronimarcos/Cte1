@@ -22,6 +22,7 @@ public partial class FormPrincipal : Form
     private readonly Dictionary<ToolStripItem, Action> _telas;
 
     private readonly ServicoEmpresas _servicoEmpresas;
+    private readonly ServicosCadastro _servicos;
     private readonly CatalogoMunicipios _municipios;
 
     /// <summary>Empresa ativa, como gravada no banco.</summary>
@@ -36,11 +37,13 @@ public partial class FormPrincipal : Form
     /// <summary>Cria a janela principal já com a empresa escolhida na seleção inicial.</summary>
     /// <param name="empresa">Empresa com que o usuário vai trabalhar.</param>
     /// <param name="servicoEmpresas">Operações de empresa no banco.</param>
+    /// <param name="servicos">Operações dos demais cadastros no banco.</param>
     /// <param name="municipios">Municípios do IBGE.</param>
-    public FormPrincipal(Empresa empresa, ServicoEmpresas servicoEmpresas, CatalogoMunicipios municipios)
+    public FormPrincipal(Empresa empresa, ServicoEmpresas servicoEmpresas, ServicosCadastro servicos, CatalogoMunicipios municipios)
     {
         InitializeComponent();
         _servicoEmpresas = servicoEmpresas;
+        _servicos = servicos;
         _municipios = municipios;
         _empresa = empresa;
         _empresaAtiva = EmpresaPrototipo.DeEntidade(empresa);
@@ -49,13 +52,13 @@ public partial class FormPrincipal : Form
         _cadastros = new()
         {
             [mnuCadastrosEmpresas] = () => new FonteEmpresas(_servicoEmpresas, _municipios, _empresa.Id, RecarregarEmpresaAtivaAsync),
-            [mnuCadastrosParticipantes] = () => new FonteParticipantes(_empresaAtiva.Id),
-            [mnuCadastrosVeiculos] = () => new FonteVeiculos(_empresaAtiva.Id),
-            [mnuCadastrosProprietarios] = () => new FonteProprietarios(_empresaAtiva.Id),
+            [mnuCadastrosParticipantes] = () => new FonteParticipantes(_servicos.Participantes, _municipios, _empresa.Id),
+            [mnuCadastrosVeiculos] = () => new FonteVeiculos(_servicos.Veiculos, _servicos.Proprietarios, _empresa.Id),
+            [mnuCadastrosProprietarios] = () => new FonteProprietarios(_servicos.Proprietarios, _empresa.Id),
             [mnuCadastrosCertificados] = () => new FonteCertificados(_empresaAtiva.Id),
-            [mnuCadastrosSeries] = () => new FonteSeries(_empresaAtiva.Id),
-            [mnuCadastrosMotoristas] = () => new FonteMotoristas(_empresaAtiva.Id),
-            [mnuCadastrosApolices] = () => new FonteApolices(_empresaAtiva.Id),
+            [mnuCadastrosSeries] = () => new FonteSeries(_servicos.Series, _empresa.Id),
+            [mnuCadastrosMotoristas] = () => new FonteMotoristas(_servicos.Motoristas, _empresa.Id),
+            [mnuCadastrosApolices] = () => new FonteApolices(_servicos.Apolices, _empresa.Id),
         };
 
         _telas = new()

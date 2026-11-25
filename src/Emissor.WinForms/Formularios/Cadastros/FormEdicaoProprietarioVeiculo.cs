@@ -1,31 +1,44 @@
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cadastros;
 
-/// <summary>Diálogo de inclusão e edição do proprietário de veículo de terceiro (§5.6).</summary>
+/// <summary>Diálogo de inclusão e edição do proprietário de veículo de terceiro (§5.6), gravado no banco.</summary>
 public partial class FormEdicaoProprietarioVeiculo : Form
 {
-    private readonly ProprietarioVeiculoPrototipo _proprietario;
+    private readonly ProprietarioVeiculo _proprietario;
+    private readonly Func<ProprietarioVeiculo, Task> _gravar;
 
     /// <summary>Cria o diálogo sobre a cópia do registro.</summary>
-    /// <param name="proprietario">Cópia editável do registro.</param>
+    /// <param name="proprietario">Cópia editável do proprietário.</param>
     /// <param name="novo">Verdadeiro para inclusão.</param>
-    internal FormEdicaoProprietarioVeiculo(ProprietarioVeiculoPrototipo proprietario, bool novo)
+    /// <param name="gravar">Inclui ou altera no banco.</param>
+    internal FormEdicaoProprietarioVeiculo(ProprietarioVeiculo proprietario, bool novo, Func<ProprietarioVeiculo, Task> gravar)
     {
         InitializeComponent();
         AtalhosTeclado.ConfigurarDialogo(this, btnSalvar);
         _proprietario = proprietario;
+        _gravar = gravar;
         Text = novo ? "Novo proprietário de veículo" : "Editar proprietário de veículo";
         cboTipoProprietario.Carregar(OpcoesCadastro.TiposProprietario);
         CarregarCampos();
     }
 
-    private void btnSalvar_Click(object? sender, EventArgs e) => Salvar();
+    private async void btnSalvar_Click(object? sender, EventArgs e)
+    {
+        LerCampos();
+        if (await GravacaoDialogo.GravarAsync(this, btnSalvar, _proprietario, _gravar))
+        {
+            DialogResult = DialogResult.OK;
+        }
+    }
 
     private void CarregarCampos()
     {
-        txtCnpjCpf.Text = _proprietario.CnpjCpf;
+        txtCnpjCpf.Text = Formatador.CnpjCpf(_proprietario.CnpjCpf);
         txtRntrc.Text = _proprietario.Rntrc;
         txtNome.Text = _proprietario.Nome;
         cboTipoProprietario.Selecionar(_proprietario.TipoProprietario);
@@ -33,21 +46,9 @@ public partial class FormEdicaoProprietarioVeiculo : Form
 
     private void LerCampos()
     {
-        _proprietario.CnpjCpf = txtCnpjCpf.Text.Trim();
-        _proprietario.Rntrc = txtRntrc.Text.Trim();
+        _proprietario.CnpjCpf = Formatos.SoAlfanumericos(txtCnpjCpf.Text);
+        _proprietario.Rntrc = Formatos.SoDigitos(txtRntrc.Text);
         _proprietario.Nome = txtNome.Text.Trim();
         _proprietario.TipoProprietario = cboTipoProprietario.ValorSelecionado<TipoProprietario>();
-    }
-
-    /// <summary>Copia os campos para o registro e fecha com OK se os obrigatórios estiverem preenchidos.</summary>
-    private void Salvar()
-    {
-        LerCampos();
-        if (AvisosCadastro.HaPendencias(this, Text, _proprietario.ValidarObrigatorios()))
-        {
-            return;
-        }
-
-        DialogResult = DialogResult.OK;
     }
 }

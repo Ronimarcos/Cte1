@@ -1,3 +1,4 @@
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 
 namespace Emissor.WinForms.Prototipo;
@@ -69,5 +70,46 @@ public sealed class ParticipantePrototipo : RegistroPrototipo
         if (string.IsNullOrWhiteSpace(Bairro)) faltando.Add("Bairro");
         if (MunicipioCodigo is null) faltando.Add("Município");
         return faltando;
+    }
+
+    /// <summary>
+    /// Ponte provisória (até a fatia P2c): o diálogo de participante trabalha com a entidade do domínio, e o
+    /// assistente de CT-e ainda com o protótipo.
+    /// </summary>
+    public Participante ParaEntidade() => new()
+    {
+        Id = Id,
+        EmpresaId = EmpresaId,
+        CnpjCpf = Dominio.Regras.Formatos.SoAlfanumericos(CnpjCpf),
+        IndicadorIe = IndicadorIe,
+        Ie = Ie,
+        RazaoSocial = RazaoSocial,
+        NomeFantasia = NomeFantasia,
+        Endereco = new Endereco
+        {
+            Logradouro = Logradouro, Numero = Numero, Complemento = Complemento, Bairro = Bairro,
+            MunicipioCodigo = MunicipioCodigo, Cep = Dominio.Regras.Formatos.SoDigitos(Cep),
+        },
+        Fone = Fone,
+        Email = Email,
+    };
+
+    /// <summary>Copia para este participante do protótipo os dados editados na entidade.</summary>
+    /// <param name="participante">Entidade editada no diálogo.</param>
+    public void CopiarDe(Participante participante)
+    {
+        CnpjCpf = participante.CnpjCpf;
+        IndicadorIe = participante.IndicadorIe;
+        Ie = participante.Ie;
+        RazaoSocial = participante.RazaoSocial;
+        NomeFantasia = participante.NomeFantasia;
+        Logradouro = participante.Endereco.Logradouro;
+        Numero = participante.Endereco.Numero;
+        Complemento = participante.Endereco.Complemento;
+        Bairro = participante.Endereco.Bairro;
+        MunicipioCodigo = participante.Endereco.MunicipioCodigo;
+        Cep = participante.Endereco.Cep;
+        Fone = participante.Fone;
+        Email = participante.Email;
     }
 }

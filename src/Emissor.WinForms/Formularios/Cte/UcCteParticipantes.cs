@@ -142,16 +142,24 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
         }
     }
 
+    /// <summary>
+    /// Inclui participante sem sair da emissão. O diálogo trabalha com a entidade do domínio; até a fatia P2c
+    /// o assistente ainda usa a lista em memória, então o participante é convertido na ida e na volta.
+    /// </summary>
     private void IncluirParticipante(ComboBox combo)
     {
         var participante = new ParticipantePrototipo { EmpresaId = _empresaId };
-        using var tela = new FormEdicaoParticipante(participante, novo: true);
+        using var tela = new FormEdicaoParticipante(participante.ParaEntidade(), novo: true, municipios: null, gravar: entidade =>
+        {
+            participante.CopiarDe(entidade);
+            DadosFicticios.Participantes.Incluir(participante);
+            return Task.CompletedTask;
+        });
         if (tela.ShowDialog(this) != DialogResult.OK)
         {
             return;
         }
 
-        DadosFicticios.Participantes.Incluir(participante);
         CarregarParticipantes();
         combo.Selecionar<int>(participante.Id);
     }
@@ -164,10 +172,14 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
             return;
         }
 
-        using var tela = new FormEdicaoParticipante(copia, novo: false);
+        using var tela = new FormEdicaoParticipante(copia.ParaEntidade(), novo: false, municipios: null, gravar: entidade =>
+        {
+            copia.CopiarDe(entidade);
+            DadosFicticios.Participantes.Alterar(copia);
+            return Task.CompletedTask;
+        });
         if (tela.ShowDialog(this) == DialogResult.OK)
         {
-            DadosFicticios.Participantes.Alterar(copia);
             CarregarParticipantes();
         }
     }

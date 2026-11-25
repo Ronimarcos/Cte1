@@ -9,7 +9,7 @@ namespace Emissor.WinForms.Formularios.Cadastros;
 /// <summary>
 /// Cadastro de empresas (emitentes), gravado no banco. Não é filtrado pela empresa ativa.
 /// A empresa em uso não pode ser excluída; a recusa por vínculos vem do banco (e, até a fatia P2b,
-/// também dos cadastros que ainda estão em memória).
+/// também do cadastro de certificados, que ainda está em memória até a fatia P3).
 /// </summary>
 internal sealed class FonteEmpresas : IFonteCadastro
 {
@@ -133,13 +133,9 @@ internal sealed class FonteEmpresas : IFonteCadastro
     /// <inheritdoc />
     public Color? CorDaLinha(object registro) => null;
 
-    /// <summary>Vínculos com os cadastros que ainda estão em memória (até a fatia P2b).</summary>
-    private static bool TemCadastrosEmMemoria(int empresaId) =>
-        DadosFicticios.Participantes.Existe(p => p.EmpresaId == empresaId)
-        || DadosFicticios.Veiculos.Existe(v => v.EmpresaId == empresaId)
-        || DadosFicticios.Proprietarios.Existe(p => p.EmpresaId == empresaId)
-        || DadosFicticios.Certificados.Existe(c => c.EmpresaId == empresaId)
-        || DadosFicticios.Series.Existe(s => s.EmpresaId == empresaId)
-        || DadosFicticios.Motoristas.Existe(m => m.EmpresaId == empresaId)
-        || DadosFicticios.Apolices.Existe(a => a.EmpresaId == empresaId);
+    /// <summary>
+    /// Vínculo com o cadastro de certificados, que continua em memória até a fatia P3. Os demais cadastros estão
+    /// no banco, e o próprio banco recusa excluir a empresa que os tenha.
+    /// </summary>
+    private static bool TemCadastrosEmMemoria(int empresaId) => DadosFicticios.Certificados.Existe(c => c.EmpresaId == empresaId);
 }

@@ -84,7 +84,7 @@ Preferências do responsável pelo projeto:
 - [ ] Persistência (SQLite/EF Core, `docs/LEVANTAMENTO.md` §8.2).
   - [x] P1: entidades e regras no Dominio, DbContext, repositório e migração `Inicial` no Dados (`dotnet tool restore` antes de `dotnet ef`).
   - [x] P2a: banco na abertura (`appsettings.json`), municípios do IBGE, empresas e seleção de empresa no banco, dados de demonstração.
-  - [ ] P2b: demais cadastros no banco.
+  - [x] P2b: participantes, veículos, proprietários, motoristas, apólices e séries no banco (certificados na P3).
   - [ ] P2c: assistentes de CT-e/MDF-e lendo os cadastros do banco.
   - [ ] P3: certificado A1/A3 real.
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.

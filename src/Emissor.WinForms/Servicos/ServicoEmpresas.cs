@@ -99,7 +99,14 @@ public sealed class ServicoEmpresas
         return await DadosDemonstracao.BancoSemEmpresasAsync(contexto);
     }
 
-    /// <summary>Grava as empresas de demonstração.</summary>
+    /// <summary>Indica se o banco tem só as empresas de demonstração, ainda sem os demais cadastros.</summary>
+    public async Task<bool> CadastrosDemonstracaoPendentesAsync()
+    {
+        await using var contexto = await _fabrica.CreateDbContextAsync();
+        return await DadosDemonstracao.CadastrosDemonstracaoPendentesAsync(contexto);
+    }
+
+    /// <summary>Grava os dados de demonstração que faltarem (empresas e demais cadastros).</summary>
     public async Task CarregarDemonstracaoAsync()
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();

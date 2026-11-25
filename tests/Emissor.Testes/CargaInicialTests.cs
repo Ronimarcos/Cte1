@@ -69,6 +69,62 @@ public sealed class CargaInicialTests : IDisposable
     }
 
     [Fact]
+    public void Demonstracao_DemaisCadastrosPassamNasRegras()
+    {
+        Assert.All(DadosDemonstracao.Participantes(), p => Assert.Empty(p.Validar()));
+        Assert.All(DadosDemonstracao.Proprietarios(), p => Assert.Empty(p.Validar()));
+        Assert.All(DadosDemonstracao.Veiculos(), v => Assert.Empty(v.Validar()));
+        Assert.All(DadosDemonstracao.Motoristas(), m => Assert.Empty(m.Validar()));
+        Assert.All(DadosDemonstracao.Apolices(), a => Assert.Empty(a.Validar()));
+        Assert.All(DadosDemonstracao.Series(), s => Assert.Empty(s.Validar()));
+    }
+
+    [Fact]
+    public async Task Demonstracao_CarregaTodosOsCadastrosComOsCodigosEsperados()
+    {
+        await CargaMunicipios.CarregarSeVazioAsync(_contexto);
+        await DadosDemonstracao.CarregarAsync(_contexto);
+
+        Assert.Equal([1, 2, 3, 4], await _contexto.Participantes.OrderBy(p => p.Id).Select(p => p.Id).ToListAsync());
+        Assert.Equal(3, await _contexto.Veiculos.CountAsync());
+        Assert.Equal(1, (await _contexto.Veiculos.SingleAsync(v => v.Id == 3)).ProprietarioId);
+        Assert.Equal(2, await _contexto.Proprietarios.CountAsync());
+        Assert.Equal(3, await _contexto.Motoristas.CountAsync());
+        Assert.Equal(2, await _contexto.Apolices.CountAsync());
+        Assert.Equal(3, await _contexto.Series.CountAsync());
+        Assert.False(await DadosDemonstracao.CadastrosDemonstracaoPendentesAsync(_contexto));
+    }
+
+    [Fact]
+    public async Task Demonstracao_CompletaQuemSoTinhaAsEmpresas()
+    {
+        await CargaMunicipios.CarregarSeVazioAsync(_contexto);
+        _contexto.Empresas.AddRange(DadosDemonstracao.Empresas());
+        await _contexto.SaveChangesAsync();
+        _contexto.ChangeTracker.Clear();
+
+        Assert.True(await DadosDemonstracao.CadastrosDemonstracaoPendentesAsync(_contexto));
+        await DadosDemonstracao.CarregarAsync(_contexto);
+        Assert.Equal(4, await _contexto.Participantes.CountAsync());
+    }
+
+    [Fact]
+    public async Task Demonstracao_NaoCompletaBancoComEmpresaPropria()
+    {
+        await CargaMunicipios.CarregarSeVazioAsync(_contexto);
+        var propria = RegrasDominioTests.EmpresaValida();
+        propria.Cnpj = "12ABC34501DE35";
+        _contexto.Empresas.Add(propria);
+        await _contexto.SaveChangesAsync();
+        _contexto.ChangeTracker.Clear();
+
+        Assert.False(await DadosDemonstracao.CadastrosDemonstracaoPendentesAsync(_contexto));
+        await DadosDemonstracao.CarregarAsync(_contexto);
+        Assert.Equal(1, await _contexto.Empresas.CountAsync());
+        Assert.Equal(0, await _contexto.Participantes.CountAsync());
+    }
+
+    [Fact]
     public async Task Demonstracao_GravaSoComBancoSemEmpresas()
     {
         await CargaMunicipios.CarregarSeVazioAsync(_contexto);
