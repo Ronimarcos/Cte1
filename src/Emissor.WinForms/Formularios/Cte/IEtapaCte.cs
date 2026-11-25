@@ -1,4 +1,5 @@
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
@@ -10,8 +11,8 @@ internal interface IEtapaCte
 
     /// <summary>Preenche os campos da etapa a partir do CT-e; chamado uma vez, ao abrir o assistente.</summary>
     /// <param name="cte">CT-e em edição.</param>
-    /// <param name="empresa">Empresa emitente.</param>
-    void Carregar(CtePrototipo cte, EmpresaPrototipo empresa);
+    /// <param name="cadastros">Empresa emitente e cadastros lidos do banco.</param>
+    void Carregar(CtePrototipo cte, CadastrosEmissao cadastros);
 
     /// <summary>Chamado sempre que a etapa passa a ser exibida (ex.: ajustar campos ao tipo do CT-e).</summary>
     /// <param name="cte">CT-e em edição, com as etapas anteriores já lidas.</param>

@@ -28,12 +28,6 @@ public partial class FormPrincipal : Form
     /// <summary>Empresa ativa, como gravada no banco.</summary>
     private Empresa _empresa;
 
-    /// <summary>
-    /// Mesma empresa no formato do protótipo, usado pelos assistentes de CT-e/MDF-e e pelos cadastros ainda em
-    /// memória (ponte provisória até a fatia P2c).
-    /// </summary>
-    private EmpresaPrototipo _empresaAtiva;
-
     /// <summary>Cria a janela principal já com a empresa escolhida na seleção inicial.</summary>
     /// <param name="empresa">Empresa com que o usuário vai trabalhar.</param>
     /// <param name="servicoEmpresas">Operações de empresa no banco.</param>
@@ -46,16 +40,15 @@ public partial class FormPrincipal : Form
         _servicos = servicos;
         _municipios = municipios;
         _empresa = empresa;
-        _empresaAtiva = EmpresaPrototipo.DeEntidade(empresa);
 
-        // As funções leem _empresaAtiva na hora de abrir, então seguem a troca de empresa.
+        // As funções leem _empresa na hora de abrir, então seguem a troca de empresa.
         _cadastros = new()
         {
             [mnuCadastrosEmpresas] = () => new FonteEmpresas(_servicoEmpresas, _municipios, _empresa.Id, RecarregarEmpresaAtivaAsync),
             [mnuCadastrosParticipantes] = () => new FonteParticipantes(_servicos.Participantes, _municipios, _empresa.Id),
             [mnuCadastrosVeiculos] = () => new FonteVeiculos(_servicos.Veiculos, _servicos.Proprietarios, _empresa.Id),
             [mnuCadastrosProprietarios] = () => new FonteProprietarios(_servicos.Proprietarios, _empresa.Id),
-            [mnuCadastrosCertificados] = () => new FonteCertificados(_empresaAtiva.Id),
+            [mnuCadastrosCertificados] = () => new FonteCertificados(_empresa.Id),
             [mnuCadastrosSeries] = () => new FonteSeries(_servicos.Series, _empresa.Id),
             [mnuCadastrosMotoristas] = () => new FonteMotoristas(_servicos.Motoristas, _empresa.Id),
             [mnuCadastrosApolices] = () => new FonteApolices(_servicos.Apolices, _empresa.Id),
@@ -146,19 +139,40 @@ public partial class FormPrincipal : Form
         return base.ProcessCmdKey(ref msg, keyData);
     }
 
-    /// <summary>Abre o assistente de emissão para um CT-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
-    private void EmitirCte()
+    /// <summary>Lê do banco os cadastros da empresa ativa usados na emissão (participantes, veículos, séries...).</summary>
+    private Task<CadastrosEmissao> CarregarCadastrosAsync() => CadastrosEmissao.CarregarAsync(_empresa, _municipios, _servicos);
+
+    /// <summary>Executa a abertura de uma tela de emissão e mostra o erro se o banco não responder.</summary>
+    private async Task AbrirComCadastrosAsync(Action<CadastrosEmissao> abrir)
     {
-        var cte = new CtePrototipo { EmpresaId = _empresaAtiva.Id };
-        using var tela = new FormEmissaoCte(cte, _empresaAtiva);
+        UseWaitCursor = true;
+        try
+        {
+            var cadastros = await CarregarCadastrosAsync();
+            UseWaitCursor = false;
+            abrir(cadastros);
+        }
+        catch (Exception erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, $"Não foi possível ler os cadastros.{Environment.NewLine}{erro.GetBaseException().Message}",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Abre o assistente de emissão para um CT-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
+    private async void EmitirCte() => await AbrirComCadastrosAsync(cadastros =>
+    {
+        var cte = new CtePrototipo { EmpresaId = _empresa.Id };
+        using var tela = new FormEmissaoCte(cte, cadastros);
         if (tela.ShowDialog(this) == DialogResult.OK)
         {
             MdiChildren.OfType<FormConsultaCte>().FirstOrDefault()?.Recarregar(cte.Id);
         }
-    }
+    });
 
     /// <summary>Abre a consulta de CT-e ou, se já estiver aberta, apenas a traz para frente.</summary>
-    private void AbrirConsultaCte()
+    private async void AbrirConsultaCte()
     {
         var telaAberta = MdiChildren.OfType<FormConsultaCte>().FirstOrDefault();
         if (telaAberta is not null)
@@ -167,23 +181,22 @@ public partial class FormPrincipal : Form
             return;
         }
 
-        var tela = new FormConsultaCte(_empresaAtiva) { MdiParent = this };
-        tela.Show();
+        await AbrirComCadastrosAsync(cadastros => new FormConsultaCte(cadastros, CarregarCadastrosAsync) { MdiParent = this }.Show());
     }
 
     /// <summary>Abre o assistente de emissão para um MDF-e novo; ao salvar, atualiza a consulta se estiver aberta.</summary>
-    private void EmitirMdfe()
+    private async void EmitirMdfe() => await AbrirComCadastrosAsync(cadastros =>
     {
-        var mdfe = new MdfePrototipo { EmpresaId = _empresaAtiva.Id };
-        using var tela = new FormEmissaoMdfe(mdfe, _empresaAtiva);
+        var mdfe = new MdfePrototipo { EmpresaId = _empresa.Id };
+        using var tela = new FormEmissaoMdfe(mdfe, cadastros);
         if (tela.ShowDialog(this) == DialogResult.OK)
         {
             MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault()?.Recarregar(mdfe.Id);
         }
-    }
+    });
 
     /// <summary>Abre a consulta de MDF-e ou, se já estiver aberta, apenas a traz para frente.</summary>
-    private void AbrirConsultaMdfe()
+    private async void AbrirConsultaMdfe()
     {
         var telaAberta = MdiChildren.OfType<FormConsultaMdfe>().FirstOrDefault();
         if (telaAberta is not null)
@@ -192,8 +205,7 @@ public partial class FormPrincipal : Form
             return;
         }
 
-        var tela = new FormConsultaMdfe(_empresaAtiva) { MdiParent = this };
-        tela.Show();
+        await AbrirComCadastrosAsync(cadastros => new FormConsultaMdfe(cadastros, CarregarCadastrosAsync) { MdiParent = this }.Show());
     }
 
     /// <summary>Relê a empresa ativa depois de uma alteração no cadastro de empresas e atualiza título e barra de status.</summary>
@@ -205,11 +217,10 @@ public partial class FormPrincipal : Form
         }
     }
 
-    /// <summary>Guarda a empresa ativa nos dois formatos e atualiza título e barra de status.</summary>
+    /// <summary>Guarda a empresa ativa e atualiza título e barra de status.</summary>
     private void DefinirEmpresa(Empresa empresa)
     {
         _empresa = empresa;
-        _empresaAtiva = EmpresaPrototipo.DeEntidade(empresa);
         AtualizarEmpresaAtiva();
     }
 

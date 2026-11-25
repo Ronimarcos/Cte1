@@ -1,5 +1,6 @@
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -19,20 +20,20 @@ public partial class FormEmissaoMdfe : Form
 
     /// <summary>Cria o assistente sobre a cópia do MDF-e.</summary>
     /// <param name="mdfe">Cópia editável do MDF-e (novo ou existente).</param>
-    /// <param name="empresa">Empresa emitente.</param>
-    internal FormEmissaoMdfe(MdfePrototipo mdfe, EmpresaPrototipo empresa)
+    /// <param name="cadastros">Empresa emitente e cadastros lidos do banco ao abrir o assistente.</param>
+    internal FormEmissaoMdfe(MdfePrototipo mdfe, CadastrosEmissao cadastros)
     {
         InitializeComponent();
         _mdfe = mdfe;
         Text = mdfe.Id == 0
-            ? $"Emitir MDF-e — {empresa.RazaoSocial}"
-            : $"MDF-e de {mdfe.DataEmissao:dd/MM/yyyy} ({mdfe.SituacaoDescricao}) — {empresa.RazaoSocial}";
+            ? $"Emitir MDF-e — {cadastros.Empresa.RazaoSocial}"
+            : $"MDF-e de {mdfe.DataEmissao:dd/MM/yyyy} ({mdfe.SituacaoDescricao}) — {cadastros.Empresa.RazaoSocial}";
 
         _telas = [ucIdentificacao, ucCarregamentoDescarga, ucVeiculos, ucCargaSeguro, ucConferencia];
         _etapas = _telas.Cast<IEtapaMdfe>().ToArray();
         foreach (var etapa in _etapas)
         {
-            etapa.Carregar(_mdfe, empresa);
+            etapa.Carregar(_mdfe, cadastros);
             lstEtapas.Items.Add(etapa.Titulo);
         }
 

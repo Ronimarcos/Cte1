@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
@@ -26,7 +27,7 @@ public partial class UcCteValores : UserControl, IEtapaCte
     public string Titulo => "4. Valores e impostos";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, EmpresaPrototipo empresa)
+    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
     {
         _componentes = new(cte.Componentes.Select(c => c.Copiar()).ToList());
         _componentes.ListChanged += (_, _) => AtualizarTotal();

@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
@@ -26,7 +27,7 @@ public partial class UcCteCargaDocumentos : UserControl, IEtapaCte
     public string Titulo => "3. Carga e documentos";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, EmpresaPrototipo empresa)
+    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
     {
         nudValorCarga.Value = cte.ValorCarga ?? 0;
         txtProdutoPredominante.Text = cte.ProdutoPredominante;

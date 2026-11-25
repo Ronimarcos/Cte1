@@ -1,13 +1,16 @@
 using System.ComponentModel;
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
+using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
 /// <summary>
-/// Etapa 2: remetente, destinatário, expedidor, recebedor, tomador e percurso.
-/// Os botões Incluir e Editar abrem o cadastro de participante sem sair da emissão.
+/// Etapa 2: remetente, destinatário, expedidor, recebedor, tomador e percurso, com os participantes e os
+/// municípios lidos do banco. Os botões Incluir e Editar gravam o participante no banco sem sair da emissão.
 /// </summary>
 public partial class UcCteParticipantes : UserControl, IEtapaCte
 {
@@ -16,7 +19,7 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
 
     private readonly Dictionary<Button, ComboBox> _comboDoBotao;
     private ComboBox[] _combosParticipante = [];
-    private int _empresaId;
+    private CadastrosEmissao? _cadastros;
 
     /// <summary>Cria a etapa.</summary>
     public UcCteParticipantes()
@@ -38,14 +41,16 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
     public string Titulo => "2. Participantes";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, EmpresaPrototipo empresa)
+    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
     {
-        _empresaId = empresa.Id;
+        _cadastros = cadastros;
         _combosParticipante = [cboRemetente, cboDestinatario, cboExpedidor, cboRecebedor, cboTomadorOutros];
 
-        var municipios = DadosFicticios.Municipios.Select(m => new Opcao<int>(m.Codigo, m.Descricao)).ToList();
-        cboMunicipioInicio.Carregar(municipios);
-        cboMunicipioFim.Carregar(municipios);
+        // Os 5.571 municípios do IBGE: o campo aceita digitação com sugestões ("Cuia" → "Cuiabá/MT").
+        cboMunicipioInicio.Carregar(cadastros.Municipios.Opcoes);
+        cboMunicipioFim.Carregar(cadastros.Municipios.Opcoes);
+        cboMunicipioInicio.ConfigurarBuscaPorTexto();
+        cboMunicipioFim.ConfigurarBuscaPorTexto();
         cboTomador.Carregar(OpcoesCadastro.Tomadores);
 
         CarregarParticipantes();
@@ -81,19 +86,19 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
     /// <inheritdoc />
     IReadOnlyList<string> IEtapaCte.Validar(CtePrototipo cte) => cte.ValidarParticipantes();
 
-    private void btnIncluir_Click(object? sender, EventArgs e)
+    private async void btnIncluir_Click(object? sender, EventArgs e)
     {
         if (sender is Button botao && _comboDoBotao.TryGetValue(botao, out var combo))
         {
-            IncluirParticipante(combo);
+            await IncluirParticipanteAsync(combo);
         }
     }
 
-    private void btnEditar_Click(object? sender, EventArgs e)
+    private async void btnEditar_Click(object? sender, EventArgs e)
     {
         if (sender is Button botao && _comboDoBotao.TryGetValue(botao, out var combo))
         {
-            EditarParticipante(combo);
+            await EditarParticipanteAsync(combo);
         }
     }
 
@@ -115,24 +120,29 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
         btnEditarTomadorOutros.Enabled = outros;
     }
 
-    private static void SugerirMunicipio(ComboBox participante, ComboBox municipio)
+    private void SugerirMunicipio(ComboBox participante, ComboBox municipio)
     {
         if (municipio.SelectedIndex >= 0 || IdSelecionado(participante) is not { } id)
         {
             return;
         }
 
-        municipio.Selecionar(DadosFicticios.Participantes.ObterPorId(id)?.MunicipioCodigo);
+        municipio.Selecionar(_cadastros?.Participante(id)?.Endereco.MunicipioCodigo);
     }
 
     /// <summary>Recarrega as listas de participantes preservando o que estava escolhido em cada uma.</summary>
     private void CarregarParticipantes()
     {
+        if (_cadastros is null)
+        {
+            return;
+        }
+
         var opcoes = new List<Opcao<int>> { new(Nenhum, "(nenhum)") };
-        opcoes.AddRange(DadosFicticios.Participantes
-            .Listar(p => p.EmpresaId == _empresaId)
+        opcoes.AddRange(_cadastros.Participantes
             .OrderBy(p => p.RazaoSocial)
-            .Select(p => new Opcao<int>(p.Id, $"{p.RazaoSocial} - {p.CnpjCpf} - {p.MunicipioDescricao}")));
+            .Select(p => new Opcao<int>(p.Id,
+                $"{p.RazaoSocial} - {Formatador.CnpjCpf(p.CnpjCpf)} - {_cadastros.Municipios.Descricao(p.Endereco.MunicipioCodigo)}")));
 
         foreach (var combo in _combosParticipante)
         {
@@ -142,45 +152,69 @@ public partial class UcCteParticipantes : UserControl, IEtapaCte
         }
     }
 
-    /// <summary>
-    /// Inclui participante sem sair da emissão. O diálogo trabalha com a entidade do domínio; até a fatia P2c
-    /// o assistente ainda usa a lista em memória, então o participante é convertido na ida e na volta.
-    /// </summary>
-    private void IncluirParticipante(ComboBox combo)
+    /// <summary>Inclui o participante no banco e já o escolhe na lista de onde o botão foi clicado.</summary>
+    private async Task IncluirParticipanteAsync(ComboBox combo)
     {
-        var participante = new ParticipantePrototipo { EmpresaId = _empresaId };
-        using var tela = new FormEdicaoParticipante(participante.ParaEntidade(), novo: true, municipios: null, gravar: entidade =>
-        {
-            participante.CopiarDe(entidade);
-            DadosFicticios.Participantes.Incluir(participante);
-            return Task.CompletedTask;
-        });
-        if (tela.ShowDialog(this) != DialogResult.OK)
+        if (_cadastros is null)
         {
             return;
         }
 
-        CarregarParticipantes();
+        var participante = new Participante { EmpresaId = _cadastros.Empresa.Id };
+        using (var tela = new FormEdicaoParticipante(participante, novo: true, _cadastros.Municipios.Opcoes, _cadastros.ServicoParticipantes.IncluirAsync))
+        {
+            if (tela.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+        }
+
+        await AtualizarListaAsync();
         combo.Selecionar<int>(participante.Id);
     }
 
-    private void EditarParticipante(ComboBox combo)
+    /// <summary>Edita no banco o participante escolhido na lista.</summary>
+    private async Task EditarParticipanteAsync(ComboBox combo)
     {
-        if (IdSelecionado(combo) is not { } id || DadosFicticios.Participantes.ObterPorId(id) is not { } copia)
+        if (_cadastros is null)
+        {
+            return;
+        }
+
+        if (IdSelecionado(combo) is not { } id)
         {
             MessageBox.Show(this, "Escolha o participante que deseja editar.", Titulo, MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
-        using var tela = new FormEdicaoParticipante(copia.ParaEntidade(), novo: false, municipios: null, gravar: entidade =>
+        if (await _cadastros.ServicoParticipantes.ObterAsync(id) is not { } copia)
         {
-            copia.CopiarDe(entidade);
-            DadosFicticios.Participantes.Alterar(copia);
-            return Task.CompletedTask;
-        });
-        if (tela.ShowDialog(this) == DialogResult.OK)
+            MessageBox.Show(this, "O participante não existe mais. A lista será atualizada.", Titulo, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            await AtualizarListaAsync();
+            return;
+        }
+
+        using (var tela = new FormEdicaoParticipante(copia, novo: false, _cadastros.Municipios.Opcoes, _cadastros.ServicoParticipantes.AlterarAsync))
         {
+            if (tela.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+        }
+
+        await AtualizarListaAsync();
+    }
+
+    private async Task AtualizarListaAsync()
+    {
+        try
+        {
+            await _cadastros!.RecarregarParticipantesAsync();
             CarregarParticipantes();
+        }
+        catch (RegraNegocioException erro)
+        {
+            AvisosCadastro.HaPendencias(this, Titulo, erro.Pendencias);
         }
     }
 

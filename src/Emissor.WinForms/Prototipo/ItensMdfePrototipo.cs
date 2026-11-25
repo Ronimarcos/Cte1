@@ -51,10 +51,6 @@ public sealed class DescargaMdfePrototipo
     /// <summary>Documentos descarregados neste município.</summary>
     public List<DocumentoMdfePrototipo> Documentos { get; set; } = [];
 
-    /// <summary>Município e quantidade de documentos, para a lista.</summary>
-    public override string ToString() =>
-        $"{DadosFicticios.ObterMunicipio(MunicipioCodigo)?.Descricao ?? MunicipioCodigo.ToString()} ({Documentos.Count} doc.)";
-
     /// <summary>Cópia independente, incluindo os documentos.</summary>
     public DescargaMdfePrototipo Copiar() =>
         new() { MunicipioCodigo = MunicipioCodigo, Documentos = Documentos.Select(d => d.Copiar()).ToList() };

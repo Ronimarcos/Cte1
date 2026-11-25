@@ -1,5 +1,6 @@
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
@@ -19,20 +20,20 @@ public partial class FormEmissaoCte : Form
 
     /// <summary>Cria o assistente sobre a cópia do CT-e.</summary>
     /// <param name="cte">Cópia editável do CT-e (novo ou existente).</param>
-    /// <param name="empresa">Empresa emitente.</param>
-    internal FormEmissaoCte(CtePrototipo cte, EmpresaPrototipo empresa)
+    /// <param name="cadastros">Empresa emitente e cadastros lidos do banco ao abrir o assistente.</param>
+    internal FormEmissaoCte(CtePrototipo cte, CadastrosEmissao cadastros)
     {
         InitializeComponent();
         _cte = cte;
         Text = cte.Id == 0
-            ? $"Emitir CT-e — {empresa.RazaoSocial}"
-            : $"CT-e de {cte.DataEmissao:dd/MM/yyyy} ({cte.SituacaoDescricao}) — {empresa.RazaoSocial}";
+            ? $"Emitir CT-e — {cadastros.Empresa.RazaoSocial}"
+            : $"CT-e de {cte.DataEmissao:dd/MM/yyyy} ({cte.SituacaoDescricao}) — {cadastros.Empresa.RazaoSocial}";
 
         _telas = [ucIdentificacao, ucParticipantes, ucCargaDocumentos, ucValores, ucConferencia];
         _etapas = _telas.Cast<IEtapaCte>().ToArray();
         foreach (var etapa in _etapas)
         {
-            etapa.Carregar(_cte, empresa);
+            etapa.Carregar(_cte, cadastros);
             lstEtapas.Items.Add(etapa.Titulo);
         }
 

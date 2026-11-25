@@ -39,6 +39,11 @@ public sealed class CatalogoMunicipios
             .ToList();
     }
 
+    /// <summary>Municípios de uma UF como opções "Nome/UF", em ordem alfabética.</summary>
+    /// <param name="uf">Sigla da UF.</param>
+    public IEnumerable<Opcao<int>> OpcoesDaUf(string uf) =>
+        _opcoes.Where(o => _porCodigo.TryGetValue(o.Valor, out var municipio) && municipio.Uf == uf);
+
     /// <summary>Município do código, ou <c>null</c>.</summary>
     /// <param name="codigo">Código IBGE.</param>
     public Municipio? Obter(int? codigo) => codigo is { } valor && _porCodigo.TryGetValue(valor, out var municipio) ? municipio : null;

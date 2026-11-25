@@ -6,9 +6,8 @@ namespace Emissor.Dados;
 
 /// <summary>
 /// Dados de demonstração, oferecidos quando o banco não tem empresas (ou tem só as empresas de demonstração,
-/// sem os demais cadastros). Documentos, placas e RNTRCs são fictícios. Os registros recebem os mesmos códigos
-/// dos dados que os assistentes de CT-e e MDF-e ainda leem da memória (até a fatia P2c), para que continuem
-/// batendo com os cadastros do banco.
+/// sem os demais cadastros). Documentos, placas e RNTRCs são fictícios. Os registros recebem códigos fixos, os
+/// mesmos usados pelos CT-e e MDF-e de exemplo que ainda ficam em memória (até a fatia P4).
 /// </summary>
 public static class DadosDemonstracao
 {

@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -30,9 +32,10 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
     public string Titulo => "3. Veículos, condutores e CIOT";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, EmpresaPrototipo empresa)
+    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
     {
-        var veiculos = DadosFicticios.Veiculos.Listar(v => v.EmpresaId == empresa.Id);
+        var empresa = cadastros.Empresa;
+        var veiculos = cadastros.Veiculos.OrderBy(v => v.Placa).ToList();
         cboTracao.Carregar(veiculos.Where(v => v.Tipo == TipoVeiculo.Tracao).Select(Descrever));
 
         var reboques = new List<Opcao<int>> { new(Nenhum, "(nenhum)") };
@@ -43,8 +46,8 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
             combo.SelectedIndex = 0;
         }
 
-        _motoristas = DadosFicticios.Motoristas.Listar(m => m.EmpresaId == empresa.Id)
-            .Select(m => new Opcao<int>(m.Id, $"{m.Nome} - CPF {m.Cpf}")).ToList();
+        _motoristas = cadastros.Motoristas.OrderBy(m => m.Nome)
+            .Select(m => new Opcao<int>(m.Id, $"{m.Nome} - CPF {Formatador.Cpf(m.Cpf)}")).ToList();
         clbCondutores.Items.Clear();
         foreach (var motorista in _motoristas)
         {
@@ -99,8 +102,10 @@ public partial class UcMdfeVeiculos : UserControl, IEtapaMdfe
 
     private ComboBox[] Reboques => [cboReboque1, cboReboque2, cboReboque3];
 
-    private static Opcao<int> Descrever(VeiculoPrototipo veiculo) =>
-        new(veiculo.Id, $"{veiculo.Placa} - {(veiculo.Tipo == TipoVeiculo.Tracao ? veiculo.TipoRodadoDescricao : veiculo.TipoCarroceriaDescricao)}"
+    private static Opcao<int> Descrever(Veiculo veiculo) =>
+        new(veiculo.Id, $"{veiculo.Placa} - {(veiculo.Tipo == TipoVeiculo.Tracao
+            ? OpcoesCadastro.Texto(OpcoesCadastro.TiposRodado, veiculo.TipoRodado)
+            : OpcoesCadastro.Texto(OpcoesCadastro.TiposCarroceria, veiculo.TipoCarroceria))}"
             + $" - tara {veiculo.TaraKg:N0} kg{(veiculo.Proprio ? string.Empty : " - terceiro")}");
 
     private void CriarColunas()

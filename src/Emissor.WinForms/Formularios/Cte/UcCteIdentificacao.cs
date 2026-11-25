@@ -2,12 +2,15 @@ using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Cte;
 
 /// <summary>Etapa 1: identificação do CT-e (grupo <c>ide</c>): tipo, serviço, série, CFOP e data.</summary>
 public partial class UcCteIdentificacao : UserControl, IEtapaCte
 {
+    private CadastrosEmissao? _cadastros;
+
     /// <summary>Cria a etapa.</summary>
     public UcCteIdentificacao()
     {
@@ -20,15 +23,15 @@ public partial class UcCteIdentificacao : UserControl, IEtapaCte
     public string Titulo => "1. Identificação";
 
     /// <inheritdoc />
-    void IEtapaCte.Carregar(CtePrototipo cte, EmpresaPrototipo empresa)
+    void IEtapaCte.Carregar(CtePrototipo cte, CadastrosEmissao cadastros)
     {
+        _cadastros = cadastros;
         cboTipo.Carregar(OpcoesCadastro.TiposCte);
         cboTipoServico.Carregar(OpcoesCadastro.TiposServicoCte);
 
         // Só as séries de CT-e da empresa no ambiente em que ela está configurada.
-        var series = DadosFicticios.Series
-            .Listar(s => s.EmpresaId == empresa.Id && s.Modelo == ModeloDocumento.Cte && s.Homologacao == empresa.Homologacao)
-            .Select(s => new Opcao<int>(s.Id, $"Série {s.Serie} ({(s.Homologacao ? "homologação" : "produção")})"));
+        var series = cadastros.SeriesDoAmbiente(ModeloDocumento.Cte)
+            .Select(s => new Opcao<int>(s.Id, $"Série {s.Serie} ({(s.Ambiente == TipoAmbiente.Homologacao ? "homologação" : "produção")})"));
         cboSerie.Carregar(series);
 
         cboTipo.Selecionar(cte.Tipo);
@@ -71,7 +74,7 @@ public partial class UcCteIdentificacao : UserControl, IEtapaCte
     private void AtualizarProximoNumero()
     {
         var serieId = cboSerie.ValorSelecionado<int>();
-        var serie = serieId is null ? null : DadosFicticios.Series.ObterPorId(serieId.Value);
+        var serie = _cadastros?.Serie(serieId);
         lblProximoNumero.Text = serie is null
             ? string.Empty
             : $"Próximo número da série: {serie.ProximoNumero:N0} (reservado só na transmissão)";

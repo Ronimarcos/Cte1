@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -10,6 +11,8 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
 {
     /// <summary>Valor da opção "(não informado)" do tipo do transportador.</summary>
     private const int NaoInformado = 0;
+
+    private CadastrosEmissao? _cadastros;
 
     /// <summary>Cria a etapa.</summary>
     public UcMdfeIdentificacao()
@@ -23,16 +26,16 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
     public string Titulo => "1. Identificação";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, EmpresaPrototipo empresa)
+    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
     {
+        _cadastros = cadastros;
         cboTipoEmitente.Carregar(OpcoesCadastro.TiposEmitenteMdfe);
         var transportadores = new List<Opcao<int>> { new(NaoInformado, "(não informado)") };
         transportadores.AddRange(OpcoesCadastro.TiposTransportador.Select(o => new Opcao<int>((int)o.Valor, o.Texto)));
         cboTipoTransportador.Carregar(transportadores);
 
-        var series = DadosFicticios.Series
-            .Listar(s => s.EmpresaId == empresa.Id && s.Modelo == ModeloDocumento.Mdfe && s.Homologacao == empresa.Homologacao)
-            .Select(s => new Opcao<int>(s.Id, $"Série {s.Serie} ({(s.Homologacao ? "homologação" : "produção")})"));
+        var series = cadastros.SeriesDoAmbiente(ModeloDocumento.Mdfe)
+            .Select(s => new Opcao<int>(s.Id, $"Série {s.Serie} ({(s.Ambiente == TipoAmbiente.Homologacao ? "homologação" : "produção")})"));
         cboSerie.Carregar(series);
 
         cboUfInicio.Items.AddRange([.. OpcoesCadastro.Ufs]);
@@ -87,7 +90,7 @@ public partial class UcMdfeIdentificacao : UserControl, IEtapaMdfe
     private void AtualizarProximoNumero()
     {
         var serieId = cboSerie.ValorSelecionado<int>();
-        var serie = serieId is null ? null : DadosFicticios.Series.ObterPorId(serieId.Value);
+        var serie = _cadastros?.Serie(serieId);
         lblProximoNumero.Text = serie is null
             ? string.Empty
             : $"Próximo número da série: {serie.ProximoNumero:N0} (reservado só na transmissão)";

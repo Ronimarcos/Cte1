@@ -2,6 +2,7 @@ using System.ComponentModel;
 using Emissor.Dominio.Enums;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -15,6 +16,7 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     private const int Nenhuma = 0;
 
     private MdfePrototipo? _mdfe;
+    private CadastrosEmissao? _cadastros;
 
     /// <summary>Cria a etapa.</summary>
     public UcMdfeCargaSeguro()
@@ -28,13 +30,15 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     public string Titulo => "4. Carga, seguro e totais";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, EmpresaPrototipo empresa)
+    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
     {
+        _cadastros = cadastros;
         cboTipoCarga.Carregar(OpcoesCadastro.TiposCargaMdfe);
         cboUnidadePeso.Carregar(OpcoesCadastro.UnidadesPesoMdfe);
         var apolices = new List<Opcao<int>> { new(Nenhuma, "(nenhuma)") };
-        apolices.AddRange(DadosFicticios.Apolices.Listar(a => a.EmpresaId == empresa.Id)
-            .Select(a => new Opcao<int>(a.Id, $"{a.NumeroApolice} - {a.NomeSeguradora} - {a.ResponsavelDescricao}")));
+        apolices.AddRange(cadastros.Apolices.OrderBy(a => a.NumeroApolice)
+            .Select(a => new Opcao<int>(a.Id,
+                $"{a.NumeroApolice} - {a.NomeSeguradora} - {OpcoesCadastro.Texto(OpcoesCadastro.ResponsaveisSeguro, a.Responsavel)}")));
         cboApolice.Carregar(apolices);
 
         cboTipoCarga.Selecionar(mdfe.TipoCarga);
@@ -103,9 +107,9 @@ public partial class UcMdfeCargaSeguro : UserControl, IEtapaMdfe
     private void AtualizarDadosApolice()
     {
         var id = cboApolice.ValorSelecionado<int>() ?? Nenhuma;
-        var apolice = id == Nenhuma ? null : DadosFicticios.Apolices.ObterPorId(id);
+        var apolice = id == Nenhuma ? null : _cadastros?.Apolice(id);
         lblDadosApolice.Text = apolice is null
             ? string.Empty
-            : $"Seguradora CNPJ {apolice.CnpjSeguradora}{(string.IsNullOrEmpty(apolice.CnpjCpfResponsavel) ? string.Empty : $" - responsável {apolice.CnpjCpfResponsavel}")}";
+            : $"Seguradora CNPJ {Formatador.Cnpj(apolice.CnpjSeguradora)}{(string.IsNullOrEmpty(apolice.CnpjCpfResponsavel) ? string.Empty : $" - responsável {Formatador.CnpjCpf(apolice.CnpjCpfResponsavel)}")}";
     }
 }

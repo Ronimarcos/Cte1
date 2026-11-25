@@ -1,4 +1,5 @@
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -10,8 +11,8 @@ internal interface IEtapaMdfe
 
     /// <summary>Preenche os campos da etapa a partir do MDF-e; chamado uma vez, ao abrir o assistente.</summary>
     /// <param name="mdfe">MDF-e em edição.</param>
-    /// <param name="empresa">Empresa emitente.</param>
-    void Carregar(MdfePrototipo mdfe, EmpresaPrototipo empresa);
+    /// <param name="cadastros">Empresa emitente e cadastros lidos do banco.</param>
+    void Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros);
 
     /// <summary>Chamado sempre que a etapa passa a ser exibida (ex.: ajustar campos ao tipo do emitente).</summary>
     /// <param name="mdfe">MDF-e em edição, com as etapas anteriores já lidas.</param>

@@ -9,11 +9,10 @@ namespace Emissor.WinForms.Formularios.Cadastros;
 /// </summary>
 public partial class UcEndereco : UserControl
 {
-    /// <summary>Cria o bloco já com a lista de municípios.</summary>
+    /// <summary>Cria o bloco; a lista de municípios é carregada pela tela com <see cref="CarregarMunicipios"/>.</summary>
     public UcEndereco()
     {
         InitializeComponent();
-        cboMunicipio.Carregar(DadosFicticios.Municipios.Select(m => new Opcao<int>(m.Codigo, m.Descricao)));
     }
 
     /// <summary>

@@ -7,8 +7,8 @@ using Emissor.WinForms.Servicos;
 namespace Emissor.WinForms.Formularios.Cadastros;
 
 /// <summary>
-/// Diálogo de inclusão e edição de participante (§5.4). Grava pelo delegado recebido: no cadastro, no banco;
-/// no assistente de CT-e (até a fatia P2c), na lista em memória do protótipo.
+/// Diálogo de inclusão e edição de participante (§5.4), usado pelo cadastro e pelo assistente de CT-e.
+/// Grava no banco pelo delegado recebido e continua aberto se o banco recusar.
 /// </summary>
 public partial class FormEdicaoParticipante : Form
 {

@@ -6,7 +6,7 @@ namespace Emissor.WinForms.Formularios.Cadastros;
 /// <summary>
 /// Implementação base de <see cref="IFonteCadastro"/> sobre um <see cref="RepositorioMemoria{T}"/>:
 /// cuida da pesquisa, da cópia para edição e da confirmação de exclusão. Usada pelos cadastros que ainda estão
-/// em memória (até a fatia P2b); responde às operações assíncronas na hora.
+/// em memória (hoje, só os certificados, até a fatia P3); responde às operações assíncronas na hora.
 /// </summary>
 /// <typeparam name="T">Tipo de registro do cadastro.</typeparam>
 internal abstract class FonteCadastro<T> : IFonteCadastro where T : RegistroPrototipo

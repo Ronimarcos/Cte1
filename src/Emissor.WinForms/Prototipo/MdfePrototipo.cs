@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Emissor.Dominio.Enums;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Prototipo;
 
@@ -123,12 +124,6 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
     /// <summary>Número para exibição.</summary>
     public string NumeroDescricao => Numero?.ToString(Brasil) ?? "—";
 
-    /// <summary>Número da série para exibição.</summary>
-    public string SerieDescricao => SerieId is null ? string.Empty : DadosFicticios.Series.ObterPorId(SerieId.Value)?.Serie?.ToString(Brasil) ?? string.Empty;
-
-    /// <summary>Placa da tração.</summary>
-    public string PlacaTracao => VeiculoTracaoId is null ? string.Empty : DadosFicticios.Veiculos.ObterPorId(VeiculoTracaoId.Value)?.Placa ?? string.Empty;
-
     /// <summary>Percurso para exibição (ex.: "MT → MS → SP").</summary>
     public string PercursoDescricao => string.Join(" → ", new[] { UfInicio }.Concat(Percurso).Append(UfFim).Where(u => u.Length > 0));
 
@@ -153,14 +148,15 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
     }
 
     /// <summary>Pendências da etapa 2 (carregamento e descarga).</summary>
-    public IReadOnlyList<string> ValidarCarregamentoDescarga()
+    /// <param name="ufDoMunicipio">UF de um município pelo código IBGE (dos municípios do banco).</param>
+    public IReadOnlyList<string> ValidarCarregamentoDescarga(Func<int, string> ufDoMunicipio)
     {
         var faltando = new List<string>();
         if (MunicipiosCarregamento.Count == 0) faltando.Add("Ao menos um município de carregamento");
         if (MunicipiosCarregamento.Count > 50) faltando.Add("No máximo 50 municípios de carregamento");
-        if (MunicipiosCarregamento.Any(c => DadosFicticios.ObterMunicipio(c)?.Uf != UfInicio)) faltando.Add($"Municípios de carregamento devem ser da UF de início ({UfInicio})");
+        if (MunicipiosCarregamento.Any(c => ufDoMunicipio(c) != UfInicio)) faltando.Add($"Municípios de carregamento devem ser da UF de início ({UfInicio})");
         if (Descargas.Count == 0) faltando.Add("Ao menos um município de descarga");
-        if (Descargas.Any(d => DadosFicticios.ObterMunicipio(d.MunicipioCodigo)?.Uf != UfFim)) faltando.Add($"Municípios de descarga devem ser da UF de fim ({UfFim})");
+        if (Descargas.Any(d => ufDoMunicipio(d.MunicipioCodigo) != UfFim)) faltando.Add($"Municípios de descarga devem ser da UF de fim ({UfFim})");
         if (Descargas.Any(d => d.Documentos.Count == 0)) faltando.Add("Cada município de descarga precisa de ao menos um documento");
         if (Descargas.SelectMany(d => d.Documentos).Any(x => x.CteId is null && !ChaveValida().IsMatch(x.Chave)))
         {
@@ -207,38 +203,42 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
         return faltando;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Pendências que não dependem dos cadastros. A conferência completa (com as UFs dos municípios) é feita
+    /// etapa por etapa no assistente.
+    /// </summary>
     public override IReadOnlyList<string> ValidarObrigatorios() =>
-        [.. ValidarIdentificacao(), .. ValidarCarregamentoDescarga(), .. ValidarVeiculos(), .. ValidarCargaSeguro()];
+        [.. ValidarIdentificacao(), .. ValidarVeiculos(), .. ValidarCargaSeguro()];
 
-    /// <summary>Texto da conferência (etapa 5).</summary>
-    public string MontarResumo()
+    /// <summary>Texto da conferência (etapa 5), com os nomes lidos dos cadastros do banco.</summary>
+    /// <param name="cadastros">Cadastros da empresa.</param>
+    public string MontarResumo(CadastrosEmissao cadastros)
     {
         var texto = new StringBuilder();
         texto.AppendLine("IDENTIFICAÇÃO");
         texto.AppendLine($"  Emitente: {OpcoesCadastro.Texto(OpcoesCadastro.TiposEmitenteMdfe, TipoEmitente)}");
         texto.AppendLine($"  Transportador: {(TipoTransportador is null ? "não informado" : OpcoesCadastro.Texto(OpcoesCadastro.TiposTransportador, TipoTransportador))}");
-        texto.AppendLine($"  Série: {SerieDescricao}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
+        texto.AppendLine($"  Série: {cadastros.NumeroSerie(SerieId)}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
         texto.AppendLine($"  Início da viagem: {(InicioViagem is null ? "não informado" : InicioViagem.Value.ToString("dd/MM/yyyy HH:mm", Brasil))}");
         texto.AppendLine($"  Percurso: {PercursoDescricao}");
         texto.AppendLine();
         texto.AppendLine("CARREGAMENTO");
-        foreach (var codigo in MunicipiosCarregamento) texto.AppendLine($"  {DadosFicticios.ObterMunicipio(codigo)?.Descricao}");
+        foreach (var codigo in MunicipiosCarregamento) texto.AppendLine($"  {cadastros.Municipio(codigo)}");
         texto.AppendLine("DESCARGA");
         foreach (var descarga in Descargas)
         {
-            texto.AppendLine($"  {DadosFicticios.ObterMunicipio(descarga.MunicipioCodigo)?.Descricao}");
+            texto.AppendLine($"  {cadastros.Municipio(descarga.MunicipioCodigo)}");
             foreach (var documento in descarga.Documentos) texto.AppendLine($"    {(documento.Tipo == TipoDocumentoMdfe.Cte ? "CT-e" : "NF-e")} {documento.ChaveDescricao}");
         }
 
         texto.AppendLine();
         texto.AppendLine("VEÍCULOS E CONDUTORES");
-        texto.AppendLine($"  Tração: {PlacaTracao}");
-        foreach (var id in ReboquesIds) texto.AppendLine($"  Reboque: {DadosFicticios.Veiculos.ObterPorId(id)?.Placa}");
+        texto.AppendLine($"  Tração: {cadastros.Placa(VeiculoTracaoId)}");
+        foreach (var id in ReboquesIds) texto.AppendLine($"  Reboque: {cadastros.Placa(id)}");
         foreach (var id in CondutoresIds)
         {
-            var motorista = DadosFicticios.Motoristas.ObterPorId(id);
-            texto.AppendLine($"  Condutor: {motorista?.Nome} ({motorista?.Cpf})");
+            var motorista = cadastros.Motorista(id);
+            texto.AppendLine(motorista is null ? $"  Condutor: {CadastrosEmissao.NaoEncontrado}" : $"  Condutor: {motorista.Nome} ({Formatador.Cpf(motorista.Cpf)})");
         }
 
         foreach (var ciot in Ciots) texto.AppendLine($"  CIOT: {ciot.Ciot} (responsável {ciot.CpfCnpjResponsavel})");
@@ -246,8 +246,11 @@ public sealed partial class MdfePrototipo : RegistroPrototipo
         texto.AppendLine();
         texto.AppendLine("CARGA, SEGURO E TOTAIS");
         texto.AppendLine($"  Produto: {OpcoesCadastro.Texto(OpcoesCadastro.TiposCargaMdfe, TipoCarga)} - {ProdutoPredominante}");
-        var apolice = ApoliceId is null ? null : DadosFicticios.Apolices.ObterPorId(ApoliceId.Value);
-        texto.AppendLine($"  Seguro: {(apolice is null ? "não informado" : $"{apolice.NomeSeguradora}, apólice {apolice.NumeroApolice} ({apolice.ResponsavelDescricao})")}");
+        var apolice = cadastros.Apolice(ApoliceId);
+        var seguro = ApoliceId is null ? "não informado"
+            : apolice is null ? CadastrosEmissao.NaoEncontrado
+            : $"{apolice.NomeSeguradora}, apólice {apolice.NumeroApolice} ({OpcoesCadastro.Texto(OpcoesCadastro.ResponsaveisSeguro, apolice.Responsavel)})";
+        texto.AppendLine($"  Seguro: {seguro}");
         foreach (var averbacao in Averbacoes) texto.AppendLine($"  Averbação: {averbacao}");
         texto.AppendLine($"  CT-e: {QuantidadeCte}    NF-e: {QuantidadeNfe}");
         texto.AppendLine($"  Valor da carga: {(ValorCarga ?? 0).ToString("C2", Brasil)}    Peso: {(PesoCarga ?? 0).ToString("N4", Brasil)} {OpcoesCadastro.Texto(OpcoesCadastro.UnidadesPesoMdfe, UnidadePeso)}");

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Prototipo;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Formularios.Mdfe;
 
@@ -12,7 +13,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
 {
     private List<int> _carregamento = [];
     private List<DescargaMdfePrototipo> _descargas = [];
-    private int _empresaId;
+    private CadastrosEmissao? _cadastros;
     private bool _atualizandoTexto;
 
     /// <summary>Cria a etapa.</summary>
@@ -28,9 +29,9 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     public string Titulo => "2. Carregamento e descarga";
 
     /// <inheritdoc />
-    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, EmpresaPrototipo empresa)
+    void IEtapaMdfe.Carregar(MdfePrototipo mdfe, CadastrosEmissao cadastros)
     {
-        _empresaId = empresa.Id;
+        _cadastros = cadastros;
         _carregamento = [.. mdfe.MunicipiosCarregamento];
         _descargas = mdfe.Descargas.Select(d => d.Copiar()).ToList();
         AtualizarCarregamento();
@@ -65,7 +66,8 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
     }
 
     /// <inheritdoc />
-    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) => mdfe.ValidarCarregamentoDescarga();
+    IReadOnlyList<string> IEtapaMdfe.Validar(MdfePrototipo mdfe) =>
+        mdfe.ValidarCarregamentoDescarga(codigo => _cadastros?.UfDoMunicipio(codigo) ?? string.Empty);
 
     private void btnAdicionarCarregamento_Click(object? sender, EventArgs e)
     {
@@ -129,10 +131,10 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
 
         var jaVinculados = _descargas.SelectMany(d => d.Documentos).Where(d => d.CteId is not null).Select(d => d.CteId!.Value).ToHashSet();
         var disponiveis = DadosFicticios.Ctes
-            .Listar(c => c.EmpresaId == _empresaId && c.Situacao == SituacaoCte.ProntoParaTransmitir && !jaVinculados.Contains(c.Id))
+            .Listar(c => c.EmpresaId == _cadastros!.Empresa.Id && c.Situacao == SituacaoCte.ProntoParaTransmitir && !jaVinculados.Contains(c.Id))
             .ToList();
 
-        using var tela = new FormSelecaoCtes(disponiveis);
+        using var tela = new FormSelecaoCtes(disponiveis, _cadastros!);
         if (tela.ShowDialog(this) != DialogResult.OK)
         {
             return;
@@ -183,7 +185,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         lstCarregamento.Items.Clear();
         foreach (var codigo in _carregamento)
         {
-            lstCarregamento.Items.Add(DadosFicticios.ObterMunicipio(codigo)?.Descricao ?? codigo.ToString());
+            lstCarregamento.Items.Add(_cadastros?.Municipio(codigo) ?? codigo.ToString());
         }
     }
 
@@ -192,7 +194,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         lstDescargas.Items.Clear();
         foreach (var descarga in _descargas)
         {
-            lstDescargas.Items.Add(descarga.ToString());
+            lstDescargas.Items.Add(TextoDescarga(descarga));
         }
 
         if (_descargas.Count > 0)
@@ -214,7 +216,7 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         var selecionado = lstDescargas.SelectedIndex;
         for (var i = 0; i < _descargas.Count && i < lstDescargas.Items.Count; i++)
         {
-            var texto = _descargas[i].ToString();
+            var texto = TextoDescarga(_descargas[i]);
             if (!Equals(lstDescargas.Items[i], texto))
             {
                 lstDescargas.Items[i] = texto;
@@ -235,8 +237,11 @@ public partial class UcMdfeCarregamentoDescarga : UserControl, IEtapaMdfe
         btnAdicionarCtes.Enabled = descarga is not null;
     }
 
-    private static IEnumerable<Opcao<int>> MunicipiosDaUf(string uf) =>
-        DadosFicticios.Municipios.Where(m => m.Uf == uf).Select(m => new Opcao<int>(m.Codigo, m.Descricao));
+    private IEnumerable<Opcao<int>> MunicipiosDaUf(string uf) => _cadastros?.Municipios.OpcoesDaUf(uf) ?? [];
+
+    /// <summary>Município e quantidade de documentos, para a lista de descargas.</summary>
+    private string TextoDescarga(DescargaMdfePrototipo descarga) =>
+        $"{_cadastros?.Municipio(descarga.MunicipioCodigo) ?? descarga.MunicipioCodigo.ToString()} ({descarga.Documentos.Count} doc.)";
 
     private void CriarColunas()
     {

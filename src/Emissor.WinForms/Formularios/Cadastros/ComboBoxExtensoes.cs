@@ -46,4 +46,36 @@ internal static class ComboBoxExtensoes
     /// <param name="combo">Lista de escolha.</param>
     public static T? ValorSelecionado<T>(this ComboBox combo) where T : struct =>
         combo.SelectedItem is Opcao<T> opcao ? opcao.Valor : null;
+
+    /// <summary>
+    /// Para listas grandes (ex.: os 5.571 municípios do IBGE): aceita digitação com sugestões e, ao sair do campo,
+    /// seleciona a opção cujo texto foi digitado por inteiro (sem diferenciar maiúsculas) ou limpa o campo.
+    /// </summary>
+    /// <param name="combo">Lista de escolha já carregada.</param>
+    public static void ConfigurarBuscaPorTexto(this ComboBox combo)
+    {
+        var selecionado = combo.SelectedIndex;
+        combo.DropDownStyle = ComboBoxStyle.DropDown;
+        combo.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+        combo.AutoCompleteSource = AutoCompleteSource.ListItems;
+        combo.SelectedIndex = selecionado;
+        combo.Leave -= ConferirTexto;
+        combo.Leave += ConferirTexto;
+    }
+
+    private static void ConferirTexto(object? sender, EventArgs e)
+    {
+        if (sender is not ComboBox combo
+            || (combo.SelectedItem is not null && combo.Text == combo.SelectedItem.ToString()))
+        {
+            return;
+        }
+
+        var indice = combo.FindStringExact(combo.Text);
+        combo.SelectedIndex = indice;
+        if (indice < 0)
+        {
+            combo.Text = string.Empty;
+        }
+    }
 }

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Emissor.Dominio.Enums;
+using Emissor.WinForms.Servicos;
 
 namespace Emissor.WinForms.Prototipo;
 
@@ -122,23 +123,11 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     /// <summary>Número para exibição.</summary>
     public string NumeroDescricao => Numero?.ToString(Brasil) ?? "—";
 
-    /// <summary>Número da série para exibição.</summary>
-    public string SerieDescricao => ObterSerie()?.Serie?.ToString(Brasil) ?? string.Empty;
-
     /// <summary>Tipo do CT-e para exibição.</summary>
     public string TipoDescricao => OpcoesCadastro.Texto(OpcoesCadastro.TiposCte, Tipo);
 
     /// <summary>Tipo do serviço para exibição.</summary>
     public string TipoServicoDescricao => OpcoesCadastro.Texto(OpcoesCadastro.TiposServicoCte, TipoServico);
-
-    /// <summary>Nome do remetente.</summary>
-    public string RemetenteNome => NomeParticipante(RemetenteId);
-
-    /// <summary>Nome do destinatário.</summary>
-    public string DestinatarioNome => NomeParticipante(DestinatarioId);
-
-    /// <summary>Nome do tomador, conforme o papel escolhido.</summary>
-    public string TomadorNome => NomeParticipante(TomadorId);
 
     /// <summary>Situação para exibição.</summary>
     public string SituacaoDescricao => Situacao switch
@@ -157,9 +146,6 @@ public sealed partial class CtePrototipo : RegistroPrototipo
         TomadorServico.Outros => TomadorOutrosId,
         _ => null,
     };
-
-    /// <summary>Série escolhida, ou <c>null</c>.</summary>
-    public SeriePrototipo? ObterSerie() => SerieId is null ? null : DadosFicticios.Series.ObterPorId(SerieId.Value);
 
     // ---- Validações por etapa ----
 
@@ -240,22 +226,23 @@ public sealed partial class CtePrototipo : RegistroPrototipo
     public override IReadOnlyList<string> ValidarObrigatorios() =>
         [.. ValidarIdentificacao(), .. ValidarParticipantes(), .. ValidarCargaDocumentos(), .. ValidarValores()];
 
-    /// <summary>Texto da conferência (etapa 5).</summary>
-    public string MontarResumo()
+    /// <summary>Texto da conferência (etapa 5), com os nomes lidos dos cadastros do banco.</summary>
+    /// <param name="cadastros">Cadastros da empresa.</param>
+    public string MontarResumo(CadastrosEmissao cadastros)
     {
         var texto = new StringBuilder();
         texto.AppendLine("IDENTIFICAÇÃO");
         texto.AppendLine($"  Tipo: {TipoDescricao}    Serviço: {TipoServicoDescricao}");
-        texto.AppendLine($"  Série: {SerieDescricao}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
+        texto.AppendLine($"  Série: {cadastros.NumeroSerie(SerieId)}    Número: {Numero?.ToString(Brasil) ?? "definido na transmissão"}    Emissão: {DataEmissao:dd/MM/yyyy}");
         texto.AppendLine($"  CFOP: {Cfop} - {NaturezaOperacao}");
         texto.AppendLine();
         texto.AppendLine("PARTICIPANTES");
-        texto.AppendLine($"  Remetente: {RemetenteNome}");
-        texto.AppendLine($"  Destinatário: {DestinatarioNome}");
-        if (ExpedidorId is not null) texto.AppendLine($"  Expedidor: {NomeParticipante(ExpedidorId)}");
-        if (RecebedorId is not null) texto.AppendLine($"  Recebedor: {NomeParticipante(RecebedorId)}");
-        texto.AppendLine($"  Tomador: {OpcoesCadastro.Texto(OpcoesCadastro.Tomadores, Tomador)} - {TomadorNome}");
-        texto.AppendLine($"  Percurso: {DescricaoMunicipio(MunicipioInicioCodigo)} → {DescricaoMunicipio(MunicipioFimCodigo)}");
+        texto.AppendLine($"  Remetente: {cadastros.NomeParticipante(RemetenteId)}");
+        texto.AppendLine($"  Destinatário: {cadastros.NomeParticipante(DestinatarioId)}");
+        if (ExpedidorId is not null) texto.AppendLine($"  Expedidor: {cadastros.NomeParticipante(ExpedidorId)}");
+        if (RecebedorId is not null) texto.AppendLine($"  Recebedor: {cadastros.NomeParticipante(RecebedorId)}");
+        texto.AppendLine($"  Tomador: {OpcoesCadastro.Texto(OpcoesCadastro.Tomadores, Tomador)} - {cadastros.NomeParticipante(TomadorId)}");
+        texto.AppendLine($"  Percurso: {cadastros.Municipio(MunicipioInicioCodigo)} → {cadastros.Municipio(MunicipioFimCodigo)}");
         texto.AppendLine();
 
         if (EhComplemento)
@@ -300,11 +287,6 @@ public sealed partial class CtePrototipo : RegistroPrototipo
         DocumentosAnteriores = DocumentosAnteriores.Select(d => d.Copiar()).ToList();
         Componentes = Componentes.Select(c => c.Copiar()).ToList();
     }
-
-    private static string NomeParticipante(int? id) =>
-        id is null ? string.Empty : DadosFicticios.Participantes.ObterPorId(id.Value)?.RazaoSocial ?? string.Empty;
-
-    private static string DescricaoMunicipio(int? codigo) => DadosFicticios.ObterMunicipio(codigo)?.Descricao ?? "?";
 
     private static string Moeda(decimal valor) => valor.ToString("C2", Brasil);
 
