@@ -8,6 +8,13 @@
         "dotnet-ef"
       ],
       "rollForward": false
+    },
+    "dotnet-xscgen": {
+      "version": "3.0.1430",
+      "commands": [
+        "xscgen"
+      ],
+      "rollForward": false
     }
   }
 }

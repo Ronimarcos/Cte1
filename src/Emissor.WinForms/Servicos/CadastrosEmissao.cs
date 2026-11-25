@@ -55,6 +55,9 @@ public sealed class CadastrosEmissao
     /// <summary>MDF-e gravados no banco.</summary>
     public ServicoDocumentos<ManifestoEletronico> Mdfes => _servicos.Mdfes;
 
+    /// <summary>Geração do XML de teste (assinado e validado, sem transmitir).</summary>
+    public ServicoXmlTeste XmlTeste => new(_servicos);
+
     /// <summary>Lê todos os cadastros da empresa do banco.</summary>
     /// <param name="empresa">Empresa ativa.</param>
     /// <param name="municipios">Municípios do IBGE.</param>

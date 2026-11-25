@@ -89,6 +89,7 @@ Preferências do responsável pelo projeto:
   - [x] P3: certificado A1/A3 real (DPAPI na máquina, A3 pelo thumbprint, `IProvedorCertificado`).
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.
     - [x] P4a: CT-e e MDF-e gravados no banco (rascunho e pronto para transmitir), sem XML nem SEFAZ.
-    - [ ] P4b: motor DF-e offline (XSD, chave, XML, assinatura, validação).
+    - [x] P4b1: motor DF-e offline do CT-e (classes do XSD, chave, XML, assinatura, validação; "Gerar XML de teste").
+    - [ ] P4b2: motor DF-e offline do MDF-e.
     - [ ] P4c: transmissão em homologação e numeração da série.
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).
