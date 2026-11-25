@@ -6,6 +6,12 @@
 
   <ItemGroup>
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- XSD oficiais (fonte única do leiaute), copiados sem edição para a saída, para validar os XML gerados. -->
+    <None Include="..\..\schemas\**\*.xsd" LinkBase="schemas" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>
