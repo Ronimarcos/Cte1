@@ -3,6 +3,7 @@ using Emissor.DFe.Certificados;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios;
+using Emissor.WinForms.Formularios.Acesso;
 using Emissor.WinForms.Formularios.Cadastros;
 using Emissor.WinForms.Servicos;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +16,8 @@ static class Program
 {
     /// <summary>
     /// Ponto de entrada: lê a configuração, prepara o banco (migrações e municípios), oferece os dados de
-    /// demonstração quando não há empresas, pede a empresa de trabalho e abre a janela principal.
+    /// demonstração quando não há empresas, pede o login (ou cria o primeiro administrador), pede a empresa de trabalho
+    /// dentro da alçada do usuário e abre a janela principal. "Trocar usuário" volta ao login.
     /// </summary>
     [STAThread]
     static void Main()
@@ -39,18 +41,76 @@ static class Program
 
             await municipios.CarregarAsync();
         });
-        if (!preparado || !GarantirEmpresa(empresas, municipios))
+        if (!preparado)
         {
             return;
         }
 
-        var empresa = EscolherEmpresa(empresas);
-        if (empresa is null)
+        var acesso = provedor.GetRequiredService<ServicoAcesso>();
+        while (true)
         {
-            return;
+            if (!Autenticar(acesso) || !GarantirEmpresa(empresas, municipios, acesso.Sessao))
+            {
+                return;
+            }
+
+            var empresa = EscolherEmpresa(empresas);
+            if (empresa is null)
+            {
+                return;
+            }
+
+            var principal = new FormPrincipal(empresa, empresas, provedor.GetRequiredService<ServicosCadastro>(), municipios, acesso);
+            Application.Run(principal);
+            if (!principal.TrocarUsuarioSolicitado)
+            {
+                return;
+            }
+
+            acesso.Sair();
+        }
+    }
+
+    /// <summary>
+    /// Primeiro acesso (banco sem usuários: cria o administrador) ou login. Senha definida pelo administrador obriga a
+    /// troca antes de continuar. Retorna falso se o usuário desistir.
+    /// </summary>
+    private static bool Autenticar(ServicoAcesso acesso)
+    {
+        var semUsuarios = FormAguarde.Executar("Verificando os usuários...", async () => (object)await acesso.SemUsuariosAsync());
+        if (semUsuarios is null)
+        {
+            return false;
         }
 
-        Application.Run(new FormPrincipal(empresa, empresas, provedor.GetRequiredService<ServicosCadastro>(), municipios));
+        if (semUsuarios is true)
+        {
+            using var primeiro = new FormPrimeiroAcesso(acesso);
+            if (primeiro.ShowDialog() != DialogResult.OK)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            using var login = new FormLogin(acesso);
+            if (login.ShowDialog() != DialogResult.OK)
+            {
+                return false;
+            }
+        }
+
+        if (acesso.Sessao.Usuario is { DeveTrocarSenha: true })
+        {
+            using var troca = new FormTrocarSenha(acesso, obrigatoria: true);
+            if (troca.ShowDialog() != DialogResult.OK)
+            {
+                acesso.Sair();
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Caminho do banco no <c>appsettings.json</c>; vazio usa o padrão (<c>C:\ProgramData\Cte1\emissor.db</c>).</summary>
@@ -69,6 +129,8 @@ static class Program
     {
         var servicos = new ServiceCollection();
         servicos.AddDbContextFactory<EmissorDbContext>(opcoes => opcoes.UseSqlite($"Data Source={caminhoBanco}"));
+        servicos.AddSingleton<Sessao>();
+        servicos.AddSingleton<ServicoAcesso>();
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
         servicos.AddSingleton(typeof(ServicoCadastro<>));
@@ -82,8 +144,16 @@ static class Program
     /// Com o banco sem empresas, oferece os dados de demonstração; se o usuário recusar, abre o cadastro da
     /// primeira empresa. Retorna falso se nenhuma empresa existir ao final.
     /// </summary>
-    private static bool GarantirEmpresa(ServicoEmpresas empresas, CatalogoMunicipios municipios)
+    /// <param name="empresas">Operações de empresa.</param>
+    /// <param name="municipios">Municípios do IBGE.</param>
+    /// <param name="sessao">Usuário logado: só o administrador cria empresas e carrega a demonstração.</param>
+    private static bool GarantirEmpresa(ServicoEmpresas empresas, CatalogoMunicipios municipios, Dominio.Regras.Sessao sessao)
     {
+        if (!sessao.AcessoTotal)
+        {
+            return true;
+        }
+
         var semEmpresas = FormAguarde.Executar("Verificando as empresas...", async () => (object)await empresas.SemEmpresasAsync());
         if (semEmpresas is null)
         {
@@ -142,6 +212,13 @@ static class Program
         var lista = FormAguarde.Executar("Lendo as empresas...", async () => await empresas.ListarResumosAsync());
         if (lista is null)
         {
+            return null;
+        }
+
+        if (lista.Count == 0)
+        {
+            MessageBox.Show("Nenhuma empresa está liberada para o seu usuário. Procure o administrador.", "Emissor CT-e / MDF-e",
+                MessageBoxButtons.OK, MessageBoxIcon.Information);
             return null;
         }
 

@@ -48,11 +48,16 @@ partial class FormPrincipal
         mnuMdfeConsultar = new ToolStripMenuItem();
         mnuSistema = new ToolStripMenuItem();
         mnuSistemaStatusSefaz = new ToolStripMenuItem();
+        mnuSistemaUsuarios = new ToolStripMenuItem();
+        mnuSistemaSeparador2 = new ToolStripSeparator();
+        mnuSistemaTrocarSenha = new ToolStripMenuItem();
+        mnuSistemaTrocarUsuario = new ToolStripMenuItem();
         mnuSistemaTrocarEmpresa = new ToolStripMenuItem();
         mnuSistemaSeparador1 = new ToolStripSeparator();
         mnuSistemaSair = new ToolStripMenuItem();
         stsPrincipal = new StatusStrip();
         lblStatusEmpresa = new ToolStripStatusLabel();
+        lblStatusUsuario = new ToolStripStatusLabel();
         lblStatusCnpj = new ToolStripStatusLabel();
         lblStatusAmbiente = new ToolStripStatusLabel();
         mnuPrincipal.SuspendLayout();
@@ -196,7 +201,7 @@ partial class FormPrincipal
         //
         // mnuSistema
         //
-        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaStatusSefaz, mnuSistemaTrocarEmpresa, mnuSistemaSeparador1, mnuSistemaSair });
+        mnuSistema.DropDownItems.AddRange(new ToolStripItem[] { mnuSistemaStatusSefaz, mnuSistemaUsuarios, mnuSistemaSeparador2, mnuSistemaTrocarEmpresa, mnuSistemaTrocarSenha, mnuSistemaTrocarUsuario, mnuSistemaSeparador1, mnuSistemaSair });
         mnuSistema.Name = "mnuSistema";
         mnuSistema.Size = new Size(60, 20);
         mnuSistema.Text = "&Sistema";
@@ -207,6 +212,32 @@ partial class FormPrincipal
         mnuSistemaStatusSefaz.Size = new Size(250, 22);
         mnuSistemaStatusSefaz.Text = "Status da SEFA&Z (homologação)";
         mnuSistemaStatusSefaz.Click += mnuSistemaStatusSefaz_Click;
+        //
+        // mnuSistemaUsuarios
+        //
+        mnuSistemaUsuarios.Name = "mnuSistemaUsuarios";
+        mnuSistemaUsuarios.Size = new Size(250, 22);
+        mnuSistemaUsuarios.Text = "&Usuários";
+        mnuSistemaUsuarios.Click += mnuSistemaUsuarios_Click;
+        //
+        // mnuSistemaSeparador2
+        //
+        mnuSistemaSeparador2.Name = "mnuSistemaSeparador2";
+        mnuSistemaSeparador2.Size = new Size(247, 6);
+        //
+        // mnuSistemaTrocarSenha
+        //
+        mnuSistemaTrocarSenha.Name = "mnuSistemaTrocarSenha";
+        mnuSistemaTrocarSenha.Size = new Size(250, 22);
+        mnuSistemaTrocarSenha.Text = "Trocar s&enha";
+        mnuSistemaTrocarSenha.Click += mnuSistemaTrocarSenha_Click;
+        //
+        // mnuSistemaTrocarUsuario
+        //
+        mnuSistemaTrocarUsuario.Name = "mnuSistemaTrocarUsuario";
+        mnuSistemaTrocarUsuario.Size = new Size(250, 22);
+        mnuSistemaTrocarUsuario.Text = "Trocar us&uário";
+        mnuSistemaTrocarUsuario.Click += mnuSistemaTrocarUsuario_Click;
         //
         // mnuSistemaTrocarEmpresa
         //
@@ -229,7 +260,7 @@ partial class FormPrincipal
         //
         // stsPrincipal
         //
-        stsPrincipal.Items.AddRange(new ToolStripItem[] { lblStatusEmpresa, lblStatusCnpj, lblStatusAmbiente });
+        stsPrincipal.Items.AddRange(new ToolStripItem[] { lblStatusEmpresa, lblStatusUsuario, lblStatusCnpj, lblStatusAmbiente });
         stsPrincipal.Location = new Point(0, 746);
         stsPrincipal.Name = "stsPrincipal";
         stsPrincipal.Size = new Size(1024, 22);
@@ -242,6 +273,13 @@ partial class FormPrincipal
         lblStatusEmpresa.Spring = true;
         lblStatusEmpresa.Text = "Empresa:";
         lblStatusEmpresa.TextAlign = ContentAlignment.MiddleLeft;
+        //
+        // lblStatusUsuario
+        //
+        lblStatusUsuario.BorderSides = ToolStripStatusLabelBorderSides.Left;
+        lblStatusUsuario.Name = "lblStatusUsuario";
+        lblStatusUsuario.Size = new Size(50, 17);
+        lblStatusUsuario.Text = "Usuário:";
         //
         // lblStatusCnpj
         //
@@ -301,11 +339,16 @@ partial class FormPrincipal
     private ToolStripMenuItem mnuMdfeConsultar;
     private ToolStripMenuItem mnuSistema;
     private ToolStripMenuItem mnuSistemaStatusSefaz;
+    private ToolStripMenuItem mnuSistemaUsuarios;
+    private ToolStripSeparator mnuSistemaSeparador2;
+    private ToolStripMenuItem mnuSistemaTrocarSenha;
+    private ToolStripMenuItem mnuSistemaTrocarUsuario;
     private ToolStripMenuItem mnuSistemaTrocarEmpresa;
     private ToolStripSeparator mnuSistemaSeparador1;
     private ToolStripMenuItem mnuSistemaSair;
     private StatusStrip stsPrincipal;
     private ToolStripStatusLabel lblStatusEmpresa;
+    private ToolStripStatusLabel lblStatusUsuario;
     private ToolStripStatusLabel lblStatusCnpj;
     private ToolStripStatusLabel lblStatusAmbiente;
 }

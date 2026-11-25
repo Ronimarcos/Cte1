@@ -57,6 +57,7 @@ Não editar os arquivos da pasta `schemas/`; nova versão de leiaute entra em pa
 - Assinatura atrás da interface `IProvedorCertificado` (implementações A1 e A3).
 - Não fixar URLs de webservice de memória: conferir na tabela oficial do portal.
 - A busca de documentos na SEFAZ é feita só pelo webservice de Distribuição DF-e; não automatizar portais com CAPTCHA.
+- Controle de acesso: toda leitura e gravação passa pela alçada do usuário logado (`IContextoAcesso` nos repositórios do Dados). Serviços de tela usam a `Sessao`; `ContextoAcesso.Sistema` (acesso total) só na preparação do banco, na demonstração e nos testes. Senha só como hash (`HashSenha`).
 
 ## Fluxo de Trabalho (Workflow)
 1. Faça perguntas de esclarecimento se os requisitos não estiverem claros.
@@ -97,3 +98,7 @@ Preferências do responsável pelo projeto:
       - [ ] P4c2: autorização do CT-e em homologação.
       - [ ] P4c3: autorização do MDF-e em homologação.
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).
+- [ ] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
+  - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
+  - [ ] A2: auditoria.
+  - [ ] A3: proteção local (banco no perfil do usuário, DPAPI do usuário).

@@ -382,3 +382,17 @@ PDFs em `docs/moc/` (fora do Git). Cronograma da NT 2026.005: regras de validaç
 **Consequência para o emissor:** o XML de teste da P4b1 sai sem `IBSCBS` (decisão daquela fatia) e, para a emitente de CRT 1 sem regime regular, seria rejeitado com 1101. Antes de autorizar (P4c2) é preciso montar `IBSCBS` com `CST`, `cClassTrib` e `gTribSN`, com os valores da pendência 9.
 
 **Outras mudanças da NT 2026.004 v1.01 a considerar adiante:** o `tpEmis` 5 (FS-DA) e o evento EPEC deixam de ser aceitos e entra a emissão em **contingência offline** (`tpEmis` = 2); novo grupo de multa e juros; regra do valor total do documento (soma de IBS e CBS a partir de 2027).
+
+### 8.5 Controle de acesso e auditoria (decidido em 25/11/2026)
+
+Requisito: o emissor pode emitir para várias empresas; cada login só vê e altera as empresas da sua alçada, e os vários certificados respeitam as empresas e as alçadas.
+
+**Decisões (respostas do responsável):** cada usuário na sua máquina (banco local), evoluindo para versão web em domínio próprio; perfis **Administrador** e **Operador**; login com **usuário e senha do sistema**; **auditoria** de quem fez cada ação.
+
+| Fatia | Conteúdo | Situação |
+|---|---|---|
+| A1 | Usuários e login: `Usuario` (login, nome, perfil, ativo, troca obrigatória, tentativas, bloqueio, último acesso) e empresas liberadas (`UsuarioEmpresas`); senha só como hash PBKDF2-SHA256 (600.000 iterações, sal de 16 bytes; mínimo 8 caracteres com letras e números); bloqueio de 15 minutos após 5 erros seguidos; mensagem igual para login ou senha errados. Primeiro acesso cria o administrador (vale também para bancos já existentes). **Alçada aplicada na camada de dados** (`IContextoAcesso` nos repositórios): o operador só lista, abre, grava e exclui registros das empresas liberadas (registro de outra empresa se comporta como inexistente); empresas, certificados e usuários só o administrador grava; não é possível ficar sem administrador ativo nem excluir o próprio usuário; empresa liberada para algum usuário não pode ser excluída. Telas: login, primeiro acesso, troca de senha (obrigatória após senha definida pelo administrador), cadastro de usuários (só administrador) e menu Sistema com "Usuários", "Trocar senha" e "Trocar usuário"; o operador não vê os menus de Empresas, Certificados e Usuários; a barra de status mostra o usuário. Migração `UsuariosAcesso` | Concluída |
+| A2 | Auditoria: registro só de inclusão (usuário, empresa, ação e data e hora) de toda inclusão, alteração e exclusão e dos eventos (login, falha, bloqueio, troca de empresa, XML de teste, SEFAZ); consulta para o administrador; nunca senha nem certificado | Pendente |
+| A3 | Proteção local: banco no perfil do Windows do usuário (`%LOCALAPPDATA%\Cte1\emissor.db`, com oferta de mover o de `ProgramData`) e certificados A1 com DPAPI do usuário do Windows (recriptografados na primeira abertura) | Pendente |
+
+**Limite do desktop:** com banco local, o login protege o uso pela tela; quem copia o arquivo do banco ainda lê os cadastros (não as senhas, que são hash, nem os certificados, depois da A3). O isolamento completo vem com a versão web e o banco no servidor; por isso as regras de acesso ficam no Dominio e no Dados, para a web reaproveitar.

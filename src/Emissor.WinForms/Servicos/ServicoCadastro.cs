@@ -15,10 +15,16 @@ namespace Emissor.WinForms.Servicos;
 public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
 {
     private readonly IDbContextFactory<EmissorDbContext> _fabrica;
+    private readonly Sessao _sessao;
 
     /// <summary>Cria o serviço sobre a fábrica de contextos.</summary>
     /// <param name="fabrica">Fábrica de contextos do banco.</param>
-    public ServicoCadastro(IDbContextFactory<EmissorDbContext> fabrica) => _fabrica = fabrica;
+    /// <param name="sessao">Usuário logado: o repositório só deixa ver e gravar as empresas da alçada dele.</param>
+    public ServicoCadastro(IDbContextFactory<EmissorDbContext> fabrica, Sessao sessao)
+    {
+        _fabrica = fabrica;
+        _sessao = sessao;
+    }
 
     /// <summary>Registros da empresa.</summary>
     /// <param name="empresaId">Empresa ativa.</param>
@@ -47,7 +53,7 @@ public sealed class ServicoCadastro<T> where T : EntidadeDaEmpresa
     private async Task<TResultado> ExecutarAsync<TResultado>(Func<RepositorioCadastro<T>, Task<TResultado>> operacao)
     {
         await using var contexto = await _fabrica.CreateDbContextAsync();
-        return await operacao(new RepositorioCadastro<T>(contexto));
+        return await operacao(new RepositorioCadastro<T>(contexto, _sessao));
     }
 }
 
