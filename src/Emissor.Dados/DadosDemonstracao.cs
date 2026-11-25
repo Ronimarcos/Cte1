@@ -127,8 +127,8 @@ public static class DadosDemonstracao
     /// <summary>Proprietários de veículos de terceiros de demonstração (códigos 1 e 2).</summary>
     public static IReadOnlyList<ProprietarioVeiculo> Proprietarios() =>
     [
-        new() { Id = 1, EmpresaId = 1, CnpjCpf = "22222222222", Rntrc = "44444444", Nome = "MOTORISTA AGREGADO EXEMPLO", TipoProprietario = TipoProprietario.TacAgregado },
-        new() { Id = 2, EmpresaId = 1, CnpjCpf = "77777777000177", Rntrc = "55555555", Nome = "FROTAS EXEMPLO LTDA", TipoProprietario = TipoProprietario.Outros },
+        new() { Id = 1, EmpresaId = 1, CnpjCpf = "22222222222", Rntrc = "44444444", Nome = "MOTORISTA AGREGADO EXEMPLO", TipoProprietario = TipoProprietario.TacAgregado, Ie = "ISENTO", Uf = "MT" },
+        new() { Id = 2, EmpresaId = 1, CnpjCpf = "77777777000177", Rntrc = "55555555", Nome = "FROTAS EXEMPLO LTDA", TipoProprietario = TipoProprietario.Outros, Ie = "777777777", Uf = "MT" },
     ];
 
     /// <summary>Veículos de demonstração (códigos 1 a 3; o 3 é de terceiro).</summary>

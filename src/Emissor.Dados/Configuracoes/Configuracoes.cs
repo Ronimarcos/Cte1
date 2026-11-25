@@ -140,6 +140,8 @@ internal sealed class ConfiguracaoProprietario : ConfiguracaoDaEmpresa<Proprieta
         builder.Property(p => p.Rntrc).HasMaxLength(8).IsRequired();
         builder.Property(p => p.Nome).HasMaxLength(60).IsRequired();
         builder.Property(p => p.TipoProprietario).IsRequired();
+        builder.Property(p => p.Ie).HasMaxLength(14).IsRequired();
+        builder.Property(p => p.Uf).HasMaxLength(2).IsRequired();
         builder.HasIndex(p => new { p.EmpresaId, p.CnpjCpf }).IsUnique();
     }
 }

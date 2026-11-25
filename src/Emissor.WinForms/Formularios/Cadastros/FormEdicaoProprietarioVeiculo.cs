@@ -24,6 +24,7 @@ public partial class FormEdicaoProprietarioVeiculo : Form
         _gravar = gravar;
         Text = novo ? "Novo proprietário de veículo" : "Editar proprietário de veículo";
         cboTipoProprietario.Carregar(OpcoesCadastro.TiposProprietario);
+        cboUf.Items.AddRange([.. OpcoesCadastro.Ufs]);
         CarregarCampos();
     }
 
@@ -42,6 +43,8 @@ public partial class FormEdicaoProprietarioVeiculo : Form
         txtRntrc.Text = _proprietario.Rntrc;
         txtNome.Text = _proprietario.Nome;
         cboTipoProprietario.Selecionar(_proprietario.TipoProprietario);
+        txtIe.Text = _proprietario.Ie;
+        cboUf.SelectedItem = string.IsNullOrEmpty(_proprietario.Uf) ? null : _proprietario.Uf;
     }
 
     private void LerCampos()
@@ -50,5 +53,7 @@ public partial class FormEdicaoProprietarioVeiculo : Form
         _proprietario.Rntrc = Formatos.SoDigitos(txtRntrc.Text);
         _proprietario.Nome = txtNome.Text.Trim();
         _proprietario.TipoProprietario = cboTipoProprietario.ValorSelecionado<TipoProprietario>();
+        _proprietario.Ie = ProprietarioVeiculo.NormalizarIe(txtIe.Text);
+        _proprietario.Uf = cboUf.SelectedItem as string ?? string.Empty;
     }
 }

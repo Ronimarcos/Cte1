@@ -99,6 +99,7 @@ public sealed class RepositorioCadastroTests : IDisposable
         var proprietario = new ProprietarioVeiculo
         {
             EmpresaId = empresaId, CnpjCpf = "22222222222", Rntrc = "44444444", Nome = "AGREGADO", TipoProprietario = TipoProprietario.TacAgregado,
+            Uf = "MT",
         };
         await proprietarios.IncluirAsync(proprietario);
         await new RepositorioCadastro<Veiculo>(_contexto).IncluirAsync(new Veiculo

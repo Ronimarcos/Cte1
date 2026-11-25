@@ -1,21 +1,10 @@
 using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Xml;
 using Emissor.DFe.Assinatura;
 using Emissor.DFe.Validacao;
 using Emissor.Dominio.Regras;
 
 namespace Emissor.DFe.Cte;
-
-/// <summary>Resultado da geração do XML do CT-e.</summary>
-/// <param name="Xml">XML assinado (vazio se a montagem não foi possível).</param>
-/// <param name="Chave">Chave de acesso.</param>
-/// <param name="Pendencias">Pendências da montagem ou erros da validação contra o XSD; vazia se o XML está válido.</param>
-public sealed record XmlGerado(string Xml, string Chave, IReadOnlyList<string> Pendencias)
-{
-    /// <summary>Indica se o XML foi gerado e passou na validação.</summary>
-    public bool Valido => Xml.Length > 0 && Pendencias.Count == 0;
-}
 
 /// <summary>
 /// Gera o XML do CT-e sem transmitir: monta pelas classes do XSD, assina com o certificado da empresa e valida contra
@@ -45,19 +34,7 @@ public static class GeradorXmlCte
             erros.AddRange(ValidadorXsd.Validar(rodo, ValidadorXsd.SchemaCteRodoviario));
         }
 
-        return new XmlGerado(Texto(documento), montado.Chave, erros);
+        return new XmlGerado(XmlGerado.Texto(documento), montado.Chave, erros);
     }
 
-    /// <summary>XML em UTF-8, sem quebras nem indentação (que mudariam a assinatura), com a declaração.</summary>
-    private static string Texto(XmlDocument documento)
-    {
-        var configuracao = new XmlWriterSettings { Encoding = new UTF8Encoding(false), Indent = false, OmitXmlDeclaration = false };
-        using var memoria = new MemoryStream();
-        using (var escritor = XmlWriter.Create(memoria, configuracao))
-        {
-            documento.Save(escritor);
-        }
-
-        return Encoding.UTF8.GetString(memoria.ToArray());
-    }
 }
