@@ -101,9 +101,9 @@ Preferências do responsável pelo projeto:
     - [ ] P4d: eventos (o CT-e 4.00 não tem mais inutilização).
       - [x] P4d1: eventos offline (cancelamento e CC-e do CT-e; cancelamento, encerramento e inclusão de condutor do MDF-e), telas com XML de teste.
       - [ ] P4d2: transmissão dos eventos e retorno da SEFAZ (depende da P4c2 e da P4c3).
-- [ ] P5: impressão (QuestPDF, licença Community).
+- [x] P5: impressão (QuestPDF, licença Community).
   - [x] P5a: DACTE em PDF a partir do XML (CODE-128C, QR Code, homologação); botão "DACTE de teste".
-  - [ ] P5b: DAMDFE (Anexo II do MOC MDF-e já em `docs/moc`).
+  - [x] P5b: DAMDFE em PDF a partir do XML (modelo rodoviário, CIOT e documentos vinculados abaixo do leiaute padrão); botão "DAMDFE de teste".
 - [x] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
   - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).

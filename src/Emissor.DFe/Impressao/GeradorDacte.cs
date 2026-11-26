@@ -1,5 +1,4 @@
 using Emissor.Dominio.Enums;
-using QRCoder;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -115,7 +114,7 @@ public static class GeradorDacte
                 campos.Item().PaddingTop(3).Text("PROTOCOLO DE AUTORIZAÇÃO DE USO").FontSize(5.5f);
                 campos.Item().Text(dados.Protocolo.Length > 0 ? dados.Protocolo : "SEM PROTOCOLO DE AUTORIZAÇÃO (DOCUMENTO NÃO AUTORIZADO)").Bold();
             });
-            if (QrCodePng(dados.QrCode) is { } qrCode)
+            if (ImpressaoComum.QrCodePng(dados.QrCode) is { } qrCode)
             {
                 variaveis.ConstantItem(27, Unit.Millimetre).Border(Borda).Padding(1).Width(25, Unit.Millimetre).Height(25, Unit.Millimetre)
                     .Image(qrCode).FitArea();
@@ -281,17 +280,4 @@ public static class GeradorDacte
             coluna.Item().Text($"CNPJ/CPF: {pessoa.Documento}   IE: {pessoa.Ie}");
             coluna.Item().Text($"PAÍS: {pessoa.Pais}   FONE: {pessoa.Fone}");
         });
-
-    /// <summary>Imagem do QR Code (nível M e UTF-8, MOC CT-e 4.00); nula se não houver conteúdo.</summary>
-    private static byte[]? QrCodePng(string conteudo)
-    {
-        if (conteudo.Length == 0)
-        {
-            return null;
-        }
-
-        using var gerador = new QRCodeGenerator();
-        using var dados = gerador.CreateQrCode(conteudo, QRCodeGenerator.ECCLevel.M, forceUtf8: true);
-        return new PngByteQRCode(dados).GetGraphic(10);
-    }
 }
