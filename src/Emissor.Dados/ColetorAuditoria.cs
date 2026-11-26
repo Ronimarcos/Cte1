@@ -20,7 +20,7 @@ internal static class ColetorAuditoria
     ];
 
     /// <summary>Campos de controle que não interessam na alteração.</summary>
-    private static readonly HashSet<string> Ignorados = [nameof(EntidadeBase.CriadoEm), nameof(EntidadeBase.AlteradoEm)];
+    private static readonly HashSet<string> Ignorados = [nameof(EntidadeBase.CriadoEm), nameof(EntidadeBase.AlteradoEm), nameof(EventoDocumento.Xml)];
 
     /// <summary>Campos que identificam o registro na inclusão e na exclusão, quando existirem.</summary>
     private static readonly string[] Identificadores =
@@ -40,6 +40,7 @@ internal static class ColetorAuditoria
         [typeof(ProprietarioVeiculo)] = "Proprietário de veículo",
         [typeof(Veiculo)] = "Veículo",
         [typeof(Usuario)] = "Usuário",
+        [typeof(EventoDocumento)] = "Evento",
     };
 
     /// <summary>Mudanças pendentes de gravação que viram linhas de auditoria.</summary>

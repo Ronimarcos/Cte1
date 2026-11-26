@@ -56,6 +56,9 @@ internal static class DescricoesDocumentos
     public static string DescreverSituacao(SituacaoDocumento situacao) => situacao switch
     {
         SituacaoDocumento.ProntoParaTransmitir => "Pronto para transmitir",
+        SituacaoDocumento.Autorizado => "Autorizado",
+        SituacaoDocumento.Cancelado => "Cancelado",
+        SituacaoDocumento.Encerrado => "Encerrado",
         _ => "Em digitação",
     };
 

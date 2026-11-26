@@ -20,6 +20,15 @@ public abstract class DocumentoFiscal : EntidadeDaEmpresa
     /// <summary>Data de emissão (<c>ide/dhEmi</c>).</summary>
     public DateTime DataEmissao { get; set; } = DateTime.Today;
 
+    /// <summary>Chave de acesso (44 posições); preenchida na transmissão (P4c2 e P4c3).</summary>
+    public string Chave { get; set; } = string.Empty;
+
+    /// <summary>Protocolo de autorização de uso (15 dígitos); preenchido na autorização.</summary>
+    public string Protocolo { get; set; } = string.Empty;
+
+    /// <summary>Data e hora da autorização (<c>dhRecbto</c>); base dos prazos de cancelamento.</summary>
+    public DateTime? AutorizadoEm { get; set; }
+
     /// <summary>Só o rascunho pode ser alterado e excluído livremente.</summary>
     public bool EmDigitacao => Situacao == SituacaoDocumento.EmDigitacao;
 

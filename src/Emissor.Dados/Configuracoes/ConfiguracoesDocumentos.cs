@@ -21,6 +21,8 @@ internal sealed class ConfiguracaoConhecimentoTransporte : ConfiguracaoDaEmpresa
         builder.Property(c => c.OutrasCaracteristicas).HasMaxLength(30).IsRequired();
         builder.Property(c => c.ChaveCteComplementado).HasMaxLength(44).IsRequired();
         builder.Property(c => c.Observacoes).HasMaxLength(2000).IsRequired();
+        builder.Property(c => c.Chave).HasMaxLength(44).IsRequired();
+        builder.Property(c => c.Protocolo).HasMaxLength(15).IsRequired();
 
         builder.HasOne<SerieDocumento>().WithMany().HasForeignKey(c => c.SerieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Participante>().WithMany().HasForeignKey(c => c.RemetenteId).OnDelete(DeleteBehavior.Restrict);
@@ -79,6 +81,8 @@ internal sealed class ConfiguracaoManifestoEletronico : ConfiguracaoDaEmpresa<Ma
         builder.Property(m => m.UfFim).HasMaxLength(2).IsRequired();
         builder.Property(m => m.ProdutoPredominante).HasMaxLength(120).IsRequired();
         builder.Property(m => m.InformacoesComplementares).HasMaxLength(5000).IsRequired();
+        builder.Property(m => m.Chave).HasMaxLength(44).IsRequired();
+        builder.Property(m => m.Protocolo).HasMaxLength(15).IsRequired();
 
         builder.HasOne<SerieDocumento>().WithMany().HasForeignKey(m => m.SerieId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Veiculo>().WithMany().HasForeignKey(m => m.VeiculoTracaoId).OnDelete(DeleteBehavior.Restrict);
