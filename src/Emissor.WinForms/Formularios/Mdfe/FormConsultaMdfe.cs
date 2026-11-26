@@ -3,6 +3,7 @@ using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
+using Emissor.WinForms.Formularios.Eventos;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
 
@@ -209,12 +210,64 @@ public partial class FormConsultaMdfe : Form
     private async void btnXmlTeste_Click(object? sender, EventArgs e) => await GerarXmlTesteAsync();
 
     /// <summary>Encerrar, cancelar, incluir condutor e incluir DF-e são eventos enviados à SEFAZ: só no motor DF-e.</summary>
-    private void btnEvento_Click(object? sender, EventArgs e)
+    private async void btnEvento_Click(object? sender, EventArgs e)
     {
-        var evento = (sender as Button)?.Text.Replace("&", string.Empty) ?? "Este evento";
-        MessageBox.Show(this,
-            $"\"{evento}\" é um evento do MDF-e autorizado e fica disponível na implementação do motor DF-e (homologação).",
-            Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        TipoEvento? tipo = sender == btnEncerrar ? TipoEvento.EncerramentoMdfe
+            : sender == btnCancelarMdfe ? TipoEvento.CancelamentoMdfe
+            : sender == btnIncluirCondutor ? TipoEvento.InclusaoCondutorMdfe
+            : null;
+        if (tipo is null)
+        {
+            MessageBox.Show(this, "A inclusão de DF-e no MDF-e (evento 110115) fica para uma fase futura.",
+                Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        await ExecutarEventoAsync(tipo.Value);
+    }
+
+    /// <summary>
+    /// Lê do banco o MDF-e selecionado, relê os cadastros e abre a tela do evento, que gera o XML de teste (sem
+    /// transmitir nem gravar).
+    /// </summary>
+    /// <param name="tipo">Tipo do evento.</param>
+    private async Task ExecutarEventoAsync(TipoEvento tipo)
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        if (Selecionado is not { } atual)
+        {
+            MessageBox.Show(this, "Selecione um MDF-e na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            var documento = await _cadastros.Mdfes.ObterAsync(atual.Id)
+                ?? throw new RegraNegocioException("O MDF-e não existe mais. Atualize a lista.");
+            _cadastros = await _carregarCadastros();
+            var numero = documento.Numero is { } n ? $"nº {n}" : "sem número";
+            await TelaEvento.ExecutarAsync(this, _cadastros, documento, tipo,
+                $"MDF-e {numero} de {documento.DataEmissao:dd/MM/yyyy} ({documento.SituacaoDescricao})");
+        }
+        catch (RegraNegocioException erro)
+        {
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), tipo.Descricao(), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível gerar o XML do evento.{Environment.NewLine}{erro.GetBaseException().Message}",
+                tipo.Descricao(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            _ocupado = false;
+        }
     }
 
     private void dgvMdfes_SelectionChanged(object? sender, EventArgs e) => AtualizarBotoes();
@@ -258,6 +311,7 @@ public partial class FormConsultaMdfe : Form
         var mdfe = Selecionado;
         btnAbrir.Enabled = mdfe is not null;
         btnExcluir.Enabled = mdfe is { Situacao: SituacaoDocumento.EmDigitacao };
+        btnEncerrar.Enabled = btnCancelarMdfe.Enabled = btnIncluirCondutor.Enabled = mdfe is not null;
     }
 
     private Task NovoAsync() => AbrirAssistenteAsync(new ManifestoEletronico { EmpresaId = _cadastros.Empresa.Id });

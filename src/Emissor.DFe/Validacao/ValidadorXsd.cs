@@ -28,6 +28,27 @@ public static class ValidadorXsd
     /// <summary>Consulta de status do serviço do MDF-e.</summary>
     public const string SchemaConsStatServMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\consStatServMDFe_v3.00.xsd";
 
+    /// <summary>Envelope do evento do CT-e (o detalhe em <c>detEvento</c> é validado à parte).</summary>
+    public const string SchemaEventoCte = @"schemas\cte\PL_CTe_400_NT2026.005\eventoCTe_v4.00.xsd";
+
+    /// <summary>Detalhe do cancelamento do CT-e.</summary>
+    public const string SchemaEvCancCte = @"schemas\cte\PL_CTe_400_NT2026.005\evCancCTe_v4.00.xsd";
+
+    /// <summary>Detalhe da carta de correção do CT-e.</summary>
+    public const string SchemaEvCceCte = @"schemas\cte\PL_CTe_400_NT2026.005\evCCeCTe_v4.00.xsd";
+
+    /// <summary>Envelope do evento do MDF-e (o detalhe em <c>detEvento</c> é validado à parte).</summary>
+    public const string SchemaEventoMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\eventoMDFe_v3.00.xsd";
+
+    /// <summary>Detalhe do cancelamento do MDF-e.</summary>
+    public const string SchemaEvCancMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\evCancMDFe_v3.00.xsd";
+
+    /// <summary>Detalhe do encerramento do MDF-e.</summary>
+    public const string SchemaEvEncMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\evEncMDFe_v3.00.xsd";
+
+    /// <summary>Detalhe da inclusão de condutor no MDF-e.</summary>
+    public const string SchemaEvIncCondutorMdfe = @"schemas\mdfe\PL_MDFe_300b_NT2025.001_1.05\evIncCondutorMDFe_v3.00.xsd";
+
     private static readonly ConcurrentDictionary<string, XmlSchemaSet> Conjuntos = new();
 
     /// <summary>Valida o elemento contra o schema e devolve os erros com o caminho do campo; vazio se válido.</summary>

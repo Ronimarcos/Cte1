@@ -4,6 +4,7 @@ using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
 using Emissor.WinForms.Formularios.Cadastros;
+using Emissor.WinForms.Formularios.Eventos;
 using Emissor.WinForms.Prototipo;
 using Emissor.WinForms.Servicos;
 
@@ -76,6 +77,8 @@ internal sealed class LinhaCte
 public partial class FormConsultaCte : Form
 {
     private readonly Func<Task<CadastrosEmissao>> _carregarCadastros;
+    private readonly Button _btnCancelarCte = new() { Location = new Point(150, 8), Size = new Size(110, 27), Text = "Cancelar CT-e", UseVisualStyleBackColor = true };
+    private readonly Button _btnCartaCorrecao = new() { Location = new Point(266, 8), Size = new Size(130, 27), Text = "Carta de correção", UseVisualStyleBackColor = true };
     private CadastrosEmissao _cadastros;
     private bool _ocupado;
     private bool _carregado;
@@ -90,6 +93,7 @@ public partial class FormConsultaCte : Form
         _cadastros = cadastros;
         _carregarCadastros = carregarCadastros;
         CriarColunas();
+        CriarBotoesEventos();
         cboSituacao.Carregar(OpcoesSituacao);
         cboSituacao.SelectedIndex = 0;
         dtpDe.Value = DateTime.Today.AddDays(-30);
@@ -247,7 +251,62 @@ public partial class FormConsultaCte : Form
         var cte = Selecionado;
         btnAbrir.Enabled = cte is not null;
         btnExcluir.Enabled = cte is { Situacao: SituacaoDocumento.EmDigitacao };
+        _btnCancelarCte.Enabled = _btnCartaCorrecao.Enabled = cte is not null;
     }
+
+    /// <summary>Rótulo e botões dos eventos do CT-e no rodapé, ao lado do total.</summary>
+    private void CriarBotoesEventos()
+    {
+        var rotulo = new Label { AutoSize = true, Location = new Point(96, 14), Text = "Eventos:" };
+        _btnCancelarCte.Click += async (_, _) => await ExecutarEventoAsync(TipoEvento.CancelamentoCte);
+        _btnCartaCorrecao.Click += async (_, _) => await ExecutarEventoAsync(TipoEvento.CartaCorrecaoCte);
+        pnlRodape.Controls.AddRange([rotulo, _btnCancelarCte, _btnCartaCorrecao]);
+    }
+
+    /// <summary>
+    /// Lê do banco o CT-e selecionado, relê os cadastros e abre a tela do evento, que gera o XML de teste (sem
+    /// transmitir nem gravar).
+    /// </summary>
+    /// <param name="tipo">Tipo do evento.</param>
+    private async Task ExecutarEventoAsync(TipoEvento tipo)
+    {
+        if (_ocupado)
+        {
+            return;
+        }
+
+        if (Selecionado is not { } atual)
+        {
+            MessageBox.Show(this, "Selecione um CT-e na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        _ocupado = true;
+        try
+        {
+            var documento = await _cadastros.Ctes.ObterAsync(atual.Id)
+                ?? throw new RegraNegocioException("O CT-e não existe mais. Atualize a lista.");
+            _cadastros = await _carregarCadastros();
+            var numero = documento.Numero is { } n ? $"nº {n}" : "sem número";
+            await TelaEvento.ExecutarAsync(this, _cadastros, documento, tipo,
+                $"CT-e {numero} de {documento.DataEmissao:dd/MM/yyyy} ({documento.SituacaoDescricao})");
+        }
+        catch (RegraNegocioException erro)
+        {
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), tipo.Descricao(), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            MessageBox.Show(this, $"Não foi possível gerar o XML do evento.{Environment.NewLine}{erro.GetBaseException().Message}",
+                tipo.Descricao(), MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            _ocupado = false;
+        }
+    }
+
 
     private Task NovoAsync() => AbrirAssistenteAsync(new ConhecimentoTransporte { EmpresaId = _cadastros.Empresa.Id });
 

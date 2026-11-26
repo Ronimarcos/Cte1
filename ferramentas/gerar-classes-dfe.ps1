@@ -38,4 +38,15 @@ Gerar 'schemas/mdfe/PL_MDFe_300b_NT2025.001_1.05' 'src/Emissor.DFe/Leiaute/Mdfe'
     'http://www.portalfiscal.inf.br/mdfe' 'Emissor.DFe.Leiaute.Mdfe' 'Emissor.DFe.Leiaute.Mdfe.Assinatura' `
     @('mdfe_v3.00.xsd', 'mdfeModalRodoviario_v3.00.xsd', 'consStatServMDFe_v3.00.xsd', 'retConsStatServMDFe_v3.00.xsd')
 
+# Eventos (P4d): os XSD dos eventos redeclaram tipos do documento (ex.: TModTransp), então cada leiaute de evento é gerado
+# num namespace próprio, com a sua cópia da assinatura. O detalhe de cada evento (cancelamento, CC-e, encerramento,
+# inclusão de condutor) entra em detEvento como XML à parte, validado contra o próprio XSD.
+Gerar 'schemas/cte/PL_CTe_400_NT2026.005' 'src/Emissor.DFe/Leiaute/CteEvento' `
+    'http://www.portalfiscal.inf.br/cte' 'Emissor.DFe.Leiaute.CteEvento' 'Emissor.DFe.Leiaute.CteEvento.Assinatura' `
+    @('eventoCTe_v4.00.xsd', 'retEventoCTe_v4.00.xsd', 'evCancCTe_v4.00.xsd', 'evCCeCTe_v4.00.xsd')
+
+Gerar 'schemas/mdfe/PL_MDFe_300b_NT2025.001_1.05' 'src/Emissor.DFe/Leiaute/MdfeEvento' `
+    'http://www.portalfiscal.inf.br/mdfe' 'Emissor.DFe.Leiaute.MdfeEvento' 'Emissor.DFe.Leiaute.MdfeEvento.Assinatura' `
+    @('eventoMDFe_v3.00.xsd', 'retEventoMDFe_v3.00.xsd', 'evCancMDFe_v3.00.xsd', 'evEncMDFe_v3.00.xsd', 'evIncCondutorMDFe_v3.00.xsd')
+
 Write-Host 'Classes geradas.'

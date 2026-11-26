@@ -56,6 +56,9 @@ public class EmissorDbContext : DbContext
     /// <summary>Auditoria (só inclusão; o banco recusa alteração e exclusão).</summary>
     public DbSet<RegistroAuditoria> Auditoria => Set<RegistroAuditoria>();
 
+    /// <summary>Eventos dos documentos (cancelamento, carta de correção, encerramento, inclusão de condutor).</summary>
+    public DbSet<EventoDocumento> Eventos => Set<EventoDocumento>();
+
     /// <summary>
     /// Quem está gravando (informado pelos repositórios). Com usuário logado, toda inclusão, alteração e exclusão vira
     /// linha de auditoria na mesma transação; sem usuário (operações internas), não há auditoria automática.

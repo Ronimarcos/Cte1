@@ -134,9 +134,17 @@ namespace Emissor.Dados.Migracoes
                     b.Property<bool>("Ativo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("AutorizadoEm")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Cfop")
                         .IsRequired()
                         .HasMaxLength(4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(44)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("ChaveCteComplementado")
@@ -186,6 +194,11 @@ namespace Emissor.Dados.Migracoes
                     b.Property<string>("ProdutoPredominante")
                         .IsRequired()
                         .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Protocolo")
+                        .IsRequired()
+                        .HasMaxLength(15)
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("RecebedorId")
@@ -323,6 +336,90 @@ namespace Emissor.Dados.Migracoes
                     b.ToTable("Empresas", (string)null);
                 });
 
+            modelBuilder.Entity("Emissor.Dominio.Entidades.EventoDocumento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("AlteradoEm")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("CodigoStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CpfCondutor")
+                        .IsRequired()
+                        .HasMaxLength(11)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DataEncerramento")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DataHora")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DocumentoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("EmpresaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Justificativa")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("MunicipioEncerramentoCodigo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("NomeCondutor")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Protocolo")
+                        .IsRequired()
+                        .HasMaxLength(15)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RegistradoEm")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Sequencia")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Situacao")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Xml")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MunicipioEncerramentoCodigo");
+
+                    b.HasIndex("EmpresaId", "Tipo", "DocumentoId", "Sequencia")
+                        .IsUnique();
+
+                    b.ToTable("Eventos", (string)null);
+                });
+
             modelBuilder.Entity("Emissor.Dominio.Entidades.ManifestoEletronico", b =>
                 {
                     b.Property<int>("Id")
@@ -338,8 +435,16 @@ namespace Emissor.Dados.Migracoes
                     b.Property<bool>("Ativo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("AutorizadoEm")
+                        .HasColumnType("TEXT");
+
                     b.PrimitiveCollection<string>("Averbacoes")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Chave")
+                        .IsRequired()
+                        .HasMaxLength(44)
                         .HasColumnType("TEXT");
 
                     b.PrimitiveCollection<string>("CondutoresIds")
@@ -380,6 +485,11 @@ namespace Emissor.Dados.Migracoes
                     b.Property<string>("ProdutoPredominante")
                         .IsRequired()
                         .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Protocolo")
+                        .IsRequired()
+                        .HasMaxLength(15)
                         .HasColumnType("TEXT");
 
                     b.PrimitiveCollection<string>("ReboquesIds")
@@ -1066,6 +1176,59 @@ namespace Emissor.Dados.Migracoes
 
                     b.Navigation("Endereco")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Emissor.Dominio.Entidades.EventoDocumento", b =>
+                {
+                    b.HasOne("Emissor.Dominio.Entidades.Empresa", null)
+                        .WithMany()
+                        .HasForeignKey("EmpresaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Emissor.Dominio.Entidades.Municipio", null)
+                        .WithMany()
+                        .HasForeignKey("MunicipioEncerramentoCodigo")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.OwnsMany("Emissor.Dominio.Entidades.CorrecaoCte", "Correcoes", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Campo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int>("EventoDocumentoId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Grupo")
+                                .IsRequired()
+                                .HasMaxLength(20)
+                                .HasColumnType("TEXT");
+
+                            b1.Property<int?>("NumeroItem")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<string>("Valor")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("EventoDocumentoId");
+
+                            b1.ToTable("EventoCorrecoes", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("EventoDocumentoId");
+                        });
+
+                    b.Navigation("Correcoes");
                 });
 
             modelBuilder.Entity("Emissor.Dominio.Entidades.ManifestoEletronico", b =>

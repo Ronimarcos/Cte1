@@ -234,6 +234,7 @@ static class Program
         servicos.AddSingleton<Sessao>();
         servicos.AddSingleton<ServicoAcesso>();
         servicos.AddSingleton<ServicoAuditoria>();
+        servicos.AddSingleton<ServicoEventos>();
         servicos.AddSingleton<CatalogoMunicipios>();
         servicos.AddSingleton<ServicoEmpresas>();
         servicos.AddSingleton(typeof(ServicoCadastro<>));

@@ -1,12 +1,18 @@
 using Emissor.DFe.Certificados;
 using Emissor.DFe;
 using Emissor.DFe.Cte;
+using Emissor.DFe.Eventos;
 using Emissor.DFe.Mdfe;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
 
 namespace Emissor.WinForms.Servicos;
+
+/// <summary>Resultado do XML de teste de um evento.</summary>
+/// <param name="Resultado">XML assinado e pendências.</param>
+/// <param name="DadosFicticios">A chave e o protocolo usados são de teste (documento ainda não autorizado).</param>
+public sealed record XmlEventoTeste(XmlGerado Resultado, bool DadosFicticios);
 
 /// <summary>
 /// Gera o XML de teste do CT-e e do MDF-e (P4b): lê o certificado da empresa, monta, assina e valida contra os XSD, sem
@@ -81,6 +87,54 @@ public sealed class ServicoXmlTeste
         });
         await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id, Resumo("MDF-e", mdfe.Id, resultado));
         return resultado;
+    }
+
+    /// <summary>
+    /// Gera o XML de teste de um evento (cancelamento, CC-e, encerramento, inclusão de condutor), sem transmitir e
+    /// sem gravar o evento. Enquanto o documento não tem chave e protocolo de autorização, usa uma chave de teste
+    /// (série e próximo número, código numérico zero) e o protocolo zerado, só para conferir a estrutura.
+    /// </summary>
+    /// <param name="evento">Evento com os dados informados na tela.</param>
+    /// <param name="documento">CT-e ou MDF-e lido do banco.</param>
+    /// <param name="cadastros">Empresa e cadastros lidos do banco.</param>
+    /// <exception cref="RegraNegocioException">Série, município ou certificado ausente, ou falha ao assinar.</exception>
+    public async Task<XmlEventoTeste> GerarEventoAsync(EventoDocumento evento, DocumentoFiscal documento, CadastrosEmissao cadastros)
+    {
+        var certificado = await CertificadoValidoAsync(_servicos, cadastros.Empresa);
+        var autorizado = ChaveAcesso.Valida(documento.Chave) && documento.Protocolo.Length == 15;
+        var chave = autorizado ? documento.Chave : ChaveDeTeste(evento.Tipo.Modelo(), documento, cadastros);
+        var protocolo = autorizado ? documento.Protocolo : new string('0', 15);
+        var dados = new DadosEvento(evento, cadastros.Empresa, chave, protocolo, TipoAmbiente.Homologacao, DateTimeOffset.Now);
+
+        // Leitura dos XSD e assinatura fora da tela; o A3 pode pedir o PIN.
+        var resultado = await Task.Run(() =>
+        {
+            using var x509 = ProvedoresCertificado.Criar(certificado, _servicos.Protetor).ObterCertificado();
+            return GeradorXmlEvento.Gerar(dados, x509);
+        });
+        var sigla = evento.Tipo.Modelo() == ModeloDocumento.Cte ? "CT-e" : "MDF-e";
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id,
+            resultado.Valido
+                ? $"XML de teste do evento {evento.Tipo.Descricao()} ({evento.Tipo.Codigo()}, sequência {evento.Sequencia}) do {sigla} {documento.Id}: válido"
+                : $"XML de teste do evento {evento.Tipo.Descricao()} do {sigla} {documento.Id}: {resultado.Pendencias.Count} pendência(s)");
+        return new XmlEventoTeste(resultado, !autorizado);
+    }
+
+    /// <summary>Chave de teste do documento ainda não autorizado (série e número previstos, código numérico zero).</summary>
+    private static string ChaveDeTeste(ModeloDocumento modelo, DocumentoFiscal documento, CadastrosEmissao cadastros)
+    {
+        var empresa = cadastros.Empresa;
+        var serie = cadastros.Serie(documento.SerieId)
+            ?? throw new RegraNegocioException("O documento não tem série, ou a série não existe mais.");
+        var municipio = cadastros.Municipios.Obter(empresa.Endereco.MunicipioCodigo)
+            ?? throw new RegraNegocioException("Informe o município no cadastro da empresa.");
+        if (!Formatos.CnpjValido(empresa.Cnpj))
+        {
+            throw new RegraNegocioException("O XML de teste do evento exige empresa com CNPJ.");
+        }
+
+        return ChaveAcesso.Montar(municipio.Codigo / 100_000, documento.DataEmissao, empresa.Cnpj, (int)modelo, serie.Serie,
+            documento.Numero ?? serie.ProximoNumero, 1, 0);
     }
 
     /// <summary>Texto da auditoria do XML de teste.</summary>
