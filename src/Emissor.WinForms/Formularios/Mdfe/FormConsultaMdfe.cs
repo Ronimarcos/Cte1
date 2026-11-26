@@ -79,6 +79,14 @@ internal sealed class LinhaMdfe
 public partial class FormConsultaMdfe : Form
 {
     private readonly Func<Task<CadastrosEmissao>> _carregarCadastros;
+    private readonly Button _btnDamdfe = new()
+    {
+        Anchor = AnchorStyles.Top | AnchorStyles.Right,
+        Location = new Point(610, 8),
+        Size = new Size(126, 27),
+        Text = "DA&MDFE de teste",
+        UseVisualStyleBackColor = true,
+    };
     private CadastrosEmissao _cadastros;
     private bool _ocupado;
     private bool _carregado;
@@ -93,6 +101,8 @@ public partial class FormConsultaMdfe : Form
         _cadastros = cadastros;
         _carregarCadastros = carregarCadastros;
         CriarColunas();
+        _btnDamdfe.Click += async (_, _) => await GerarDamdfeTesteAsync();
+        pnlRodape.Controls.Add(_btnDamdfe);
         cboSituacao.Carregar(OpcoesSituacao);
         cboSituacao.SelectedIndex = 0;
         dtpDe.Value = DateTime.Today.AddDays(-30);
@@ -209,6 +219,75 @@ public partial class FormConsultaMdfe : Form
 
     private async void btnXmlTeste_Click(object? sender, EventArgs e) => await GerarXmlTesteAsync();
 
+    /// <summary>
+    /// Gera o DAMDFE de teste do MDF-e selecionado (a partir do XML de teste, em homologação e sem protocolo) e
+    /// oferece salvar e abrir o PDF.
+    /// </summary>
+    private async Task GerarDamdfeTesteAsync()
+    {
+        const string titulo = "DAMDFE de teste";
+        if (_ocupado)
+        {
+            return;
+        }
+
+        if (Selecionado is not { } atual)
+        {
+            MessageBox.Show(this, "Selecione um MDF-e na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        _ocupado = true;
+        UseWaitCursor = true;
+        try
+        {
+            var mdfe = await _cadastros.Mdfes.ObterAsync(atual.Id)
+                ?? throw new RegraNegocioException("O MDF-e não existe mais. Atualize a lista.");
+            _cadastros = await _carregarCadastros();
+            var (xml, pdf) = await _cadastros.XmlTeste.GerarDamdfeAsync(mdfe, _cadastros);
+            UseWaitCursor = false;
+            if (pdf is null)
+            {
+                AvisosCadastro.HaPendencias(this, titulo, xml.Pendencias.Count > 0 ? xml.Pendencias : ["O XML do MDF-e não pôde ser gerado."]);
+                return;
+            }
+
+            using var dialogo = new SaveFileDialog
+            {
+                Title = titulo,
+                Filter = "Arquivo PDF (*.pdf)|*.pdf",
+                FileName = $"{xml.Chave}-teste-damdfe.pdf",
+            };
+            if (dialogo.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            await File.WriteAllBytesAsync(dialogo.FileName, pdf);
+            if (MessageBox.Show(this, "DAMDFE de teste salvo (homologação, sem valor fiscal). Deseja abrir o arquivo?", titulo,
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dialogo.FileName) { UseShellExecute = true });
+            }
+        }
+        catch (RegraNegocioException erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, $"Não foi possível gerar o DAMDFE.{Environment.NewLine}{erro.GetBaseException().Message}",
+                titulo, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            _ocupado = false;
+        }
+    }
+
     /// <summary>Encerrar, cancelar, incluir condutor e incluir DF-e são eventos enviados à SEFAZ: só no motor DF-e.</summary>
     private async void btnEvento_Click(object? sender, EventArgs e)
     {
@@ -311,7 +390,7 @@ public partial class FormConsultaMdfe : Form
         var mdfe = Selecionado;
         btnAbrir.Enabled = mdfe is not null;
         btnExcluir.Enabled = mdfe is { Situacao: SituacaoDocumento.EmDigitacao };
-        btnEncerrar.Enabled = btnCancelarMdfe.Enabled = btnIncluirCondutor.Enabled = mdfe is not null;
+        btnEncerrar.Enabled = btnCancelarMdfe.Enabled = btnIncluirCondutor.Enabled = _btnDamdfe.Enabled = mdfe is not null;
     }
 
     private Task NovoAsync() => AbrirAssistenteAsync(new ManifestoEletronico { EmpresaId = _cadastros.Empresa.Id });

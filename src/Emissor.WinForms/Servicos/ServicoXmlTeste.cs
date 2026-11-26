@@ -159,6 +159,27 @@ public sealed class ServicoXmlTeste
         return (xml, pdf);
     }
 
+    /// <summary>
+    /// Gera o DAMDFE de teste: o XML de teste do MDF-e (montado, assinado e validado) e o PDF a partir dele, sempre em
+    /// homologação e sem protocolo. O DAMDFE do MDF-e autorizado sai do XML autorizado (P4c3).
+    /// </summary>
+    /// <param name="mdfe">MDF-e lido do banco.</param>
+    /// <param name="cadastros">Empresa e cadastros lidos do banco.</param>
+    /// <returns>O XML gerado e o PDF; o PDF é nulo se o XML não passou na validação.</returns>
+    /// <exception cref="RegraNegocioException">Série ou certificado ausente, ou falha ao assinar.</exception>
+    public async Task<(XmlGerado Xml, byte[]? Pdf)> GerarDamdfeAsync(ManifestoEletronico mdfe, CadastrosEmissao cadastros)
+    {
+        var xml = await GerarMdfeAsync(mdfe, cadastros);
+        if (!xml.Valido)
+        {
+            return (xml, null);
+        }
+
+        var pdf = await Task.Run(() => GeradorDamdfe.Gerar(DadosDamdfe.Ler(xml.Xml)));
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id, $"DAMDFE de teste do MDF-e {mdfe.Id} (chave {xml.Chave})");
+        return (xml, pdf);
+    }
+
     /// <summary>Texto da auditoria do XML de teste.</summary>
     private static string Resumo(string documento, int id, XmlGerado resultado) =>
         resultado.Valido

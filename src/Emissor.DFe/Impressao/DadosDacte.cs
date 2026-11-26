@@ -3,6 +3,7 @@ using System.Xml;
 using Emissor.DFe.Webservices;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
+using static Emissor.DFe.Impressao.ImpressaoComum;
 
 namespace Emissor.DFe.Impressao;
 
@@ -269,7 +270,7 @@ public sealed class DadosDacte
         }
 
         // Sem infCTeSupl (XML de teste): URL de QR Code da UF autorizadora pela tabela oficial, só em homologação.
-        var uf = chave.Length >= 2 && Ufs.TryGetValue(chave[..2], out var sigla) ? sigla : string.Empty;
+        var uf = UfDaChave(chave);
         if (ambiente != TipoAmbiente.Homologacao || uf.Length == 0)
         {
             return string.Empty;
@@ -414,48 +415,4 @@ public sealed class DadosDacte
             .Select(o => $"{o.GetAttribute("xCampo")}: {Texto(o, "xTexto")}"));
         return string.Join(Environment.NewLine, partes);
     }
-
-    private static string DataHora(string texto) =>
-        DateTimeOffset.TryParse(texto, CultureInfo.InvariantCulture, DateTimeStyles.None, out var data)
-            ? data.ToString("dd/MM/yyyy HH:mm:ss", Brasil)
-            : texto;
-
-    private static string Dinheiro(string texto) => texto.Length == 0 ? string.Empty : Decimal(texto).ToString("N2", Brasil);
-
-    private static string Percentual(string texto) => texto.Length == 0 ? string.Empty : Decimal(texto).ToString("N2", Brasil) + "%";
-
-    private static decimal Decimal(string texto) =>
-        decimal.TryParse(texto, NumberStyles.Number, CultureInfo.InvariantCulture, out var valor) ? valor : 0m;
-
-    private static string Cep(string cep) => cep.Length == 8 ? $"{cep[..5]}-{cep[5..]}" : cep;
-
-    private static string FormatarCnpj(string cnpj) =>
-        cnpj.Length == 14 ? $"{cnpj[..2]}.{cnpj[2..5]}.{cnpj[5..8]}/{cnpj[8..12]}-{cnpj[12..]}" : cnpj;
-
-    private static string FormatarCpf(string cpf) =>
-        cpf.Length == 11 ? $"{cpf[..3]}.{cpf[3..6]}.{cpf[6..9]}-{cpf[9..]}" : cpf;
-
-    private static string Primeiro(params string[] textos) => textos.FirstOrDefault(t => t.Length > 0) ?? string.Empty;
-
-    private static XmlElement? Primeiro(XmlNode? pai, string nome) =>
-        pai switch
-        {
-            null => null,
-            XmlDocument documento => documento.GetElementsByTagName(nome).OfType<XmlElement>().FirstOrDefault(),
-            _ => pai.ChildNodes.OfType<XmlElement>().FirstOrDefault(e => e.LocalName == nome),
-        };
-
-    private static IEnumerable<XmlElement> Filhos(XmlElement? pai, string nome) =>
-        pai?.ChildNodes.OfType<XmlElement>().Where(e => e.LocalName == nome) ?? [];
-
-    private static string Texto(XmlElement? pai, string nome) => Primeiro(pai, nome)?.InnerText.Trim() ?? string.Empty;
-
-    /// <summary>Código IBGE da UF (dois primeiros dígitos da chave) para a sigla.</summary>
-    private static readonly IReadOnlyDictionary<string, string> Ufs = new Dictionary<string, string>
-    {
-        ["11"] = "RO", ["12"] = "AC", ["13"] = "AM", ["14"] = "RR", ["15"] = "PA", ["16"] = "AP", ["17"] = "TO",
-        ["21"] = "MA", ["22"] = "PI", ["23"] = "CE", ["24"] = "RN", ["25"] = "PB", ["26"] = "PE", ["27"] = "AL", ["28"] = "SE", ["29"] = "BA",
-        ["31"] = "MG", ["32"] = "ES", ["33"] = "RJ", ["35"] = "SP", ["41"] = "PR", ["42"] = "SC", ["43"] = "RS",
-        ["50"] = "MS", ["51"] = "MT", ["52"] = "GO", ["53"] = "DF",
-    };
 }
