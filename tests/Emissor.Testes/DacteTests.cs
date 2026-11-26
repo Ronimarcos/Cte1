@@ -62,6 +62,7 @@ public class DacteTests
         Assert.Equal("8.820,00", dados.ValorTotalPrestacao);
         Assert.StartsWith("90", dados.SituacaoTributaria, StringComparison.Ordinal);
         Assert.Equal("11111111", dados.Rntrc);
+        Assert.Equal("CST 000   CLASSIF. 000001   IBS 0,10% = 8,82   CBS 0,90% = 79,38", dados.IbsCbsSimples);
         Assert.NotEmpty(dados.Emitente.Nome);
         Assert.NotEmpty(dados.Remetente.Nome);
         Assert.NotEmpty(dados.TomadorPapel);

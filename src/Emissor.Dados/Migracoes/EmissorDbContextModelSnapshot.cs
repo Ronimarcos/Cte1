@@ -260,6 +260,14 @@ namespace Emissor.Dados.Migracoes
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<decimal?>("AliquotaCbsSimples")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("AliquotaIbsSimples")
+                        .HasPrecision(7, 4)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("AlteradoEm")
                         .HasColumnType("TEXT");
 
@@ -268,6 +276,13 @@ namespace Emissor.Dados.Migracoes
 
                     b.Property<bool>("Ativo")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClassTribIbsCbs")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(6)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("000001");
 
                     b.Property<string>("Cnpj")
                         .IsRequired()
@@ -284,6 +299,13 @@ namespace Emissor.Dados.Migracoes
 
                     b.Property<int?>("Crt")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CstIbsCbs")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("000");
 
                     b.Property<string>("Email")
                         .IsRequired()

@@ -77,8 +77,70 @@ public class XmlCteTests
         Assert.Equal("8820.00", Texto(xml, "vTPrest"));
         Assert.Equal("90", Texto(xml, "CST"));
         Assert.Equal("11111111", Texto(xml, "RNTRC"));
-        Assert.Empty(xml.GetElementsByTagName("IBSCBS"));
         Assert.Empty(xml.GetElementsByTagName("infCTeSupl"));
+
+        // IBS/CBS do Simples sem regime regular (NT 2026.005): gTribSN sobre o vTPrest, sem gIBSCBS; vTotDFe = vTPrest em 2026.
+        var ibsCbs = (XmlElement)xml.GetElementsByTagName("IBSCBS")[0]!;
+        Assert.Equal("000", ibsCbs.GetElementsByTagName("CST")[0]!.InnerText);
+        Assert.Equal("000001", Texto(xml, "cClassTrib"));
+        Assert.Equal("0.10", Texto(xml, "pIBSSN"));
+        Assert.Equal("8.82", Texto(xml, "vIBSSN"));
+        Assert.Equal("0.90", Texto(xml, "pCBSSN"));
+        Assert.Equal("79.38", Texto(xml, "vCBSSN"));
+        Assert.Empty(xml.GetElementsByTagName("gIBSCBS"));
+        Assert.Equal("8820.00", Texto(xml, "vTotDFe"));
+    }
+
+    [Fact]
+    public void SimplesSemAliquotas_NaoMonta()
+    {
+        using var certificado = CriarCertificado();
+        var empresa = DadosDemonstracao.Empresas()[0];
+        empresa.AliquotaCbsSimples = null;
+
+        var resultado = GeradorXmlCte.Gerar(Dados(DadosDemonstracao.Ctes()[0]) with { Empresa = empresa }, certificado);
+
+        Assert.False(resultado.Valido);
+        Assert.Contains(resultado.Pendencias, p => p.Contains("alíquotas efetivas", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void SimplesComRegimeRegular_AindaNaoTratado()
+    {
+        using var certificado = CriarCertificado();
+        var empresa = DadosDemonstracao.Empresas()[0];
+        empresa.RegimeIbsCbs = RegimeIbsCbs.SimplesNacionalComRegimeRegular;
+
+        var resultado = GeradorXmlCte.Gerar(Dados(DadosDemonstracao.Ctes()[0]) with { Empresa = empresa }, certificado);
+
+        Assert.False(resultado.Valido);
+        Assert.Contains(resultado.Pendencias, p => p.Contains("regime regular", StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData(8820.00, 0.10, 8.82)]
+    [InlineData(8820.00, 0.90, 79.38)]
+    [InlineData(1234.56, 0.10, 1.23)]
+    [InlineData(1234.56, 0.90, 11.11)]
+    [InlineData(5.00, 0.10, 0.01)]
+    public void ValorDoTributo_ArredondaEmDuasCasas(double valorPrestacao, double aliquota, double esperado)
+    {
+        Assert.Equal((decimal)esperado, MontadorCte.ValorTributo((decimal)valorPrestacao, (decimal)aliquota));
+    }
+
+    [Theory]
+    [InlineData("00", "000001", null, false)]
+    [InlineData("000", "1", null, false)]
+    [InlineData("000", "000001", 0.10, true)]
+    [InlineData("000", "000001", 0.12345, false)]
+    [InlineData("000", "000001", 100.0, false)]
+    public void Empresa_ConfereCstClassTribEAliquotas(string cst, string classTrib, double? aliquota, bool valida)
+    {
+        var empresa = DadosDemonstracao.Empresas()[0];
+        empresa.CstIbsCbs = cst;
+        empresa.ClassTribIbsCbs = classTrib;
+        empresa.AliquotaIbsSimples = (decimal?)aliquota;
+        Assert.Equal(valida, empresa.Validar().Count == 0);
     }
 
     [Fact]

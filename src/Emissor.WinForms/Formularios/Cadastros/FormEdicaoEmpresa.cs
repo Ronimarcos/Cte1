@@ -1,3 +1,4 @@
+using System.Globalization;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
 using Emissor.Dominio.Regras;
@@ -35,7 +36,26 @@ public partial class FormEdicaoEmpresa : Form
         cboAmbiente.Carregar(OpcoesCadastro.Ambientes);
         ucEndereco.CarregarMunicipios(municipios.Opcoes);
         CarregarCampos();
+        cboCrt.SelectedIndexChanged += (_, _) => AtualizarCamposIbsCbs();
+        cboRegimeIbsCbs.SelectedIndexChanged += (_, _) => AtualizarCamposIbsCbs();
+        AtualizarCamposIbsCbs();
     }
+
+    /// <summary>
+    /// CST, classificação e alíquotas do Simples valem para CRT 1 sem regime regular do IBS/CBS (único caso tratado
+    /// pelo emissor); nos demais casos ficam desabilitados.
+    /// </summary>
+    private void AtualizarCamposIbsCbs()
+    {
+        var simples = cboCrt.ValorSelecionado<Crt>() == Crt.SimplesNacional && cboRegimeIbsCbs.ValorSelecionado<RegimeIbsCbs>() is null;
+        txtCstIbsCbs.Enabled = txtClassTrib.Enabled = txtAliquotaIbs.Enabled = txtAliquotaCbs.Enabled = simples;
+    }
+
+    /// <summary>Alíquota digitada em pt-BR; vazio = não informada; texto inválido vira -1 para a validação recusar.</summary>
+    private static decimal? LerAliquota(string texto) =>
+        string.IsNullOrWhiteSpace(texto) ? null
+        : decimal.TryParse(texto.Replace("%", string.Empty).Trim(), NumberStyles.Number, CultureInfo.GetCultureInfo("pt-BR"), out var valor) ? valor
+        : -1;
 
     private async void btnSalvar_Click(object? sender, EventArgs e) => await SalvarAsync();
 
@@ -64,6 +84,10 @@ public partial class FormEdicaoEmpresa : Form
         txtRntrc.Text = _empresa.Rntrc;
         cboCrt.Selecionar(_empresa.Crt);
         cboRegimeIbsCbs.Selecionar(_empresa.RegimeIbsCbs);
+        txtCstIbsCbs.Text = _empresa.CstIbsCbs;
+        txtClassTrib.Text = _empresa.ClassTribIbsCbs;
+        txtAliquotaIbs.Text = _empresa.AliquotaIbsSimples?.ToString("0.00##", CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
+        txtAliquotaCbs.Text = _empresa.AliquotaCbsSimples?.ToString("0.00##", CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
         ucEndereco.Logradouro = _empresa.Endereco.Logradouro;
         ucEndereco.Numero = _empresa.Endereco.Numero;
         ucEndereco.Complemento = _empresa.Endereco.Complemento;
@@ -87,6 +111,10 @@ public partial class FormEdicaoEmpresa : Form
         _empresa.Rntrc = Formatos.SoDigitos(txtRntrc.Text);
         _empresa.Crt = cboCrt.ValorSelecionado<Crt>();
         _empresa.RegimeIbsCbs = cboRegimeIbsCbs.ValorSelecionado<RegimeIbsCbs>();
+        _empresa.CstIbsCbs = Formatos.SoDigitos(txtCstIbsCbs.Text);
+        _empresa.ClassTribIbsCbs = Formatos.SoDigitos(txtClassTrib.Text);
+        _empresa.AliquotaIbsSimples = LerAliquota(txtAliquotaIbs.Text);
+        _empresa.AliquotaCbsSimples = LerAliquota(txtAliquotaCbs.Text);
         _empresa.Endereco.Logradouro = ucEndereco.Logradouro;
         _empresa.Endereco.Numero = ucEndereco.Numero;
         _empresa.Endereco.Complemento = ucEndereco.Complemento;

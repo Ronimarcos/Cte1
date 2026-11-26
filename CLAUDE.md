@@ -95,6 +95,7 @@ Preferências do responsável pelo projeto:
     - [ ] P4c: transmissão em homologação e numeração da série.
       - [x] P4c0: webservices de homologação conferidos nas tabelas oficiais (`docs/LEVANTAMENTO.md` §8.3).
       - [x] P4c1: confiança ICP-Brasil, cliente SOAP com certificado e status do serviço (falta teste real com certificado da empresa).
+      - [x] P4c1b: IBS/CBS do Simples Nacional no CT-e (`gTribSN`, alíquotas e classificação no cadastro da empresa; homologação com CBS 0,90 % e IBS 0,10 %).
       - [ ] P4c2: autorização do CT-e em homologação.
       - [ ] P4c3: autorização do MDF-e em homologação.
     - [ ] P4d: eventos (o CT-e 4.00 não tem mais inutilização).
@@ -102,7 +103,7 @@ Preferências do responsável pelo projeto:
       - [ ] P4d2: transmissão dos eventos e retorno da SEFAZ (depende da P4c2 e da P4c3).
 - [ ] P5: impressão (QuestPDF, licença Community).
   - [x] P5a: DACTE em PDF a partir do XML (CODE-128C, QR Code, homologação); botão "DACTE de teste".
-  - [ ] P5b: DAMDFE (aguarda o Anexo II do MOC MDF-e em `docs/moc`).
+  - [ ] P5b: DAMDFE (Anexo II do MOC MDF-e já em `docs/moc`).
 - [x] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
   - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).

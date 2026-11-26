@@ -145,6 +145,12 @@ public sealed class DadosDacte
     /// <summary>Percentual de redução da base de cálculo.</summary>
     public string ReducaoBase { get; init; } = string.Empty;
 
+    /// <summary>
+    /// IBS/CBS do Simples Nacional (<c>imp/IBSCBS</c> com <c>gTribSN</c>): CST, classificação, alíquotas e valores;
+    /// vazio se o XML não tem o grupo.
+    /// </summary>
+    public string IbsCbsSimples { get; init; } = string.Empty;
+
     /// <summary>Documentos originários.</summary>
     public IReadOnlyList<DocumentoOriginarioDacte> Documentos { get; init; } = [];
 
@@ -239,6 +245,7 @@ public sealed class DadosDacte
             Aliquota = Percentual(Primeiro(Texto(icms, "pICMS"), Texto(icms, "pICMSSTRet"), Texto(icms, "pICMSOutraUF"))),
             ValorIcms = Dinheiro(Primeiro(Texto(icms, "vICMS"), Texto(icms, "vICMSSTRet"), Texto(icms, "vICMSOutraUF"))),
             ReducaoBase = Percentual(Primeiro(Texto(icms, "pRedBC"), Texto(icms, "pRedBCOutraUF"))),
+            IbsCbsSimples = LerIbsCbsSimples(Primeiro(Primeiro(cte, "imp"), "IBSCBS")),
             Documentos = LerDocumentos(Primeiro(normal, "infDoc"), Primeiro(normal, "docAnt")),
             Observacoes = LerObservacoes(Primeiro(cte, "compl")),
             Rntrc = Texto(Primeiro(Primeiro(normal, "infModal"), "rodo"), "RNTRC"),
@@ -363,6 +370,21 @@ public sealed class DadosDacte
             "90" => icms.LocalName == "ICMSOutraUF" ? "90 - ICMS OUTRA UF" : "90 - OUTROS",
             var outro => outro,
         };
+    }
+
+    private static string LerIbsCbsSimples(XmlElement? ibsCbs)
+    {
+        var simples = Primeiro(ibsCbs, "gTribSN");
+        if (simples is null)
+        {
+            return string.Empty;
+        }
+
+        var ibs = Primeiro(simples, "gIBSSN");
+        var cbs = Primeiro(simples, "gCBSSN");
+        return $"CST {Texto(ibsCbs, "CST")}   CLASSIF. {Texto(ibsCbs, "cClassTrib")}   " +
+               $"IBS {Percentual(Texto(ibs, "pIBSSN"))} = {Dinheiro(Texto(ibs, "vIBSSN"))}   " +
+               $"CBS {Percentual(Texto(cbs, "pCBSSN"))} = {Dinheiro(Texto(cbs, "vCBSSN"))}";
     }
 
     private static IReadOnlyList<DocumentoOriginarioDacte> LerDocumentos(XmlElement? infDoc, XmlElement? docAnt)
