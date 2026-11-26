@@ -27,10 +27,16 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         var caminhoBanco = LerCaminhoBanco();
+        if (!OferecerCopiaBancoAntigo(caminhoBanco))
+        {
+            return;
+        }
+
         using var provedor = ConfigurarServicos(caminhoBanco);
         var empresas = provedor.GetRequiredService<ServicoEmpresas>();
         var municipios = provedor.GetRequiredService<CatalogoMunicipios>();
 
+        RecriptografiaCertificados.Resultado? recriptografia = null;
         var preparado = FormAguarde.Executar("Preparando o banco de dados...", async progresso =>
         {
             await ConfiguracaoBanco.PrepararAsync(caminhoBanco);
@@ -38,6 +44,9 @@ static class Program
             await using (var contexto = await provedor.GetRequiredService<IDbContextFactory<EmissorDbContext>>().CreateDbContextAsync())
             {
                 await CargaMunicipios.CarregarSeVazioAsync(contexto);
+                progresso.Report("Conferindo a proteção dos certificados...");
+                recriptografia = await RecriptografiaCertificados.ExecutarAsync(
+                    contexto, provedor.GetRequiredService<IProtetorSegredos>(), new ProtetorDpapiMaquina());
             }
 
             await municipios.CarregarAsync();
@@ -46,6 +55,8 @@ static class Program
         {
             return;
         }
+
+        AvisarCertificadosSemProtecao(recriptografia);
 
         var acesso = provedor.GetRequiredService<ServicoAcesso>();
         while (true)
@@ -120,7 +131,91 @@ static class Program
         return true;
     }
 
-    /// <summary>Caminho do banco no <c>appsettings.json</c>; vazio usa o padrão (<c>C:\ProgramData\Cte1\emissor.db</c>).</summary>
+    /// <summary>
+    /// Na primeira abertura depois da fatia A3 (banco ainda não existe na pasta do usuário e existe o banco antigo em
+    /// <c>C:\ProgramData</c>), oferece copiar o banco antigo e, depois da cópia, excluí-lo. Retorna falso se o
+    /// usuário cancelar ou a cópia falhar.
+    /// </summary>
+    /// <param name="caminhoBanco">Banco que o aplicativo vai abrir.</param>
+    private static bool OferecerCopiaBancoAntigo(string caminhoBanco)
+    {
+        if (!ConfiguracaoBanco.HaBancoAntigoParaCopiar(caminhoBanco))
+        {
+            return true;
+        }
+
+        const string titulo = "Emissor CT-e / MDF-e";
+        var antigo = ConfiguracaoBanco.CaminhoAntigo;
+        var resposta = MessageBox.Show(
+            $"Encontrei o banco de dados em {antigo}, uma pasta que todos os usuários do Windows desta máquina conseguem ler." +
+            Environment.NewLine + Environment.NewLine +
+            $"A partir desta versão o banco fica na sua pasta de usuário ({caminhoBanco})." + Environment.NewLine +
+            "Deseja copiar o banco antigo para lá?" + Environment.NewLine + Environment.NewLine +
+            "Escolha \"Não\" para começar com um banco vazio (o antigo continua onde está).",
+            titulo, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+        if (resposta == DialogResult.Cancel)
+        {
+            return false;
+        }
+
+        if (resposta == DialogResult.No)
+        {
+            return true;
+        }
+
+        var copiado = FormAguarde.Executar("Copiando o banco de dados...", async () =>
+        {
+            await ConfiguracaoBanco.CopiarBancoAsync(antigo, caminhoBanco);
+            return (object)true;
+        });
+        if (copiado is null)
+        {
+            return false;
+        }
+
+        var excluir = MessageBox.Show(
+            "Banco copiado." + Environment.NewLine + Environment.NewLine +
+            $"Deseja excluir o banco antigo ({antigo})?" + Environment.NewLine +
+            "Enquanto ele existir, outros usuários do Windows desta máquina conseguem ler os cadastros que estão nele." +
+            Environment.NewLine + "Se outro usuário do Windows também usa o emissor nesta máquina, escolha \"Não\" até ele abrir o emissor.",
+            titulo, MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+        if (excluir != DialogResult.Yes)
+        {
+            return true;
+        }
+
+        try
+        {
+            ConfiguracaoBanco.ExcluirBanco(antigo);
+        }
+        catch (Exception erro) when (erro is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show($"Não foi possível excluir o banco antigo.{Environment.NewLine}{erro.Message}{Environment.NewLine}" +
+                $"Exclua manualmente o arquivo {antigo}.", titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+
+        return true;
+    }
+
+    /// <summary>Avisa os certificados A1 que não abriram com nenhuma proteção e precisam ser cadastrados de novo.</summary>
+    /// <param name="resultado">Resultado da recriptografia (nulo se não rodou).</param>
+    private static void AvisarCertificadosSemProtecao(RecriptografiaCertificados.Resultado? resultado)
+    {
+        if (resultado is not { Falhas.Count: > 0 })
+        {
+            return;
+        }
+
+        var lista = string.Join(Environment.NewLine, resultado.Falhas.Select(c => $"- {c.Titular} (CNPJ {c.CnpjTitular}, empresa {c.EmpresaId})"));
+        MessageBox.Show(
+            "Os certificados A1 abaixo não puderam ser abertos neste usuário do Windows e precisam ser cadastrados de novo" +
+            " (arquivo PFX e senha) em Cadastros → Certificados:" + Environment.NewLine + Environment.NewLine + lista +
+            Environment.NewLine + Environment.NewLine +
+            "Isso acontece quando o banco veio de outro usuário ou de outra máquina, ou quando a senha do Windows foi redefinida.",
+            "Emissor CT-e / MDF-e", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+    }
+
+    /// <summary>Caminho do banco no <c>appsettings.json</c>; vazio usa o padrão (<c>%LOCALAPPDATA%\Cte1\emissor.db</c>).</summary>
     private static string LerCaminhoBanco()
     {
         var configuracao = new ConfigurationBuilder()

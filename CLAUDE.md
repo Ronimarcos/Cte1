@@ -87,7 +87,7 @@ Preferências do responsável pelo projeto:
   - [x] P2a: banco na abertura (`appsettings.json`), municípios do IBGE, empresas e seleção de empresa no banco, dados de demonstração.
   - [x] P2b: participantes, veículos, proprietários, motoristas, apólices e séries no banco (certificados na P3).
   - [x] P2c: assistentes e consultas de CT-e/MDF-e lendo os cadastros do banco (documentos ainda em memória).
-  - [x] P3: certificado A1/A3 real (DPAPI na máquina, A3 pelo thumbprint, `IProvedorCertificado`).
+  - [x] P3: certificado A1/A3 real (DPAPI do usuário do Windows desde a A3, A3 pelo thumbprint, `IProvedorCertificado`).
   - [ ] P4: CT-e e MDF-e gravados, com o motor DF-e.
     - [x] P4a: CT-e e MDF-e gravados no banco (rascunho e pronto para transmitir), sem XML nem SEFAZ.
     - [x] P4b1: motor DF-e offline do CT-e (classes do XSD, chave, XML, assinatura, validação; "Gerar XML de teste").
@@ -101,4 +101,4 @@ Preferências do responsável pelo projeto:
 - [ ] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
   - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).
-  - [ ] A3: proteção local (banco no perfil do usuário, DPAPI do usuário).
+  - [x] A3: proteção local (banco em %LOCALAPPDATA% com cópia do antigo, DPAPI do usuário com recriptografia na abertura).
