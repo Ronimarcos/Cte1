@@ -2,6 +2,7 @@ using Emissor.DFe.Certificados;
 using Emissor.DFe;
 using Emissor.DFe.Cte;
 using Emissor.DFe.Eventos;
+using Emissor.DFe.Impressao;
 using Emissor.DFe.Mdfe;
 using Emissor.Dominio.Entidades;
 using Emissor.Dominio.Enums;
@@ -135,6 +136,27 @@ public sealed class ServicoXmlTeste
 
         return ChaveAcesso.Montar(municipio.Codigo / 100_000, documento.DataEmissao, empresa.Cnpj, (int)modelo, serie.Serie,
             documento.Numero ?? serie.ProximoNumero, 1, 0);
+    }
+
+    /// <summary>
+    /// Gera o DACTE de teste: o XML de teste do CT-e (montado, assinado e validado) e o PDF a partir dele, sempre em
+    /// homologação e sem protocolo. O DACTE do CT-e autorizado sai do XML autorizado (P4c2).
+    /// </summary>
+    /// <param name="cte">CT-e lido do banco.</param>
+    /// <param name="cadastros">Empresa e cadastros lidos do banco.</param>
+    /// <returns>O XML gerado e o PDF; o PDF é nulo se o XML não passou na validação.</returns>
+    /// <exception cref="RegraNegocioException">Série ou certificado ausente, ou falha ao assinar.</exception>
+    public async Task<(XmlGerado Xml, byte[]? Pdf)> GerarDacteAsync(ConhecimentoTransporte cte, CadastrosEmissao cadastros)
+    {
+        var xml = await GerarCteAsync(cte, cadastros);
+        if (!xml.Valido)
+        {
+            return (xml, null);
+        }
+
+        var pdf = await Task.Run(() => GeradorDacte.Gerar(DadosDacte.Ler(xml.Xml)));
+        await _servicos.Auditoria.RegistrarAsync(AcaoAuditoria.XmlTeste, cadastros.Empresa.Id, $"DACTE de teste do CT-e {cte.Id} (chave {xml.Chave})");
+        return (xml, pdf);
     }
 
     /// <summary>Texto da auditoria do XML de teste.</summary>

@@ -79,6 +79,14 @@ public partial class FormConsultaCte : Form
     private readonly Func<Task<CadastrosEmissao>> _carregarCadastros;
     private readonly Button _btnCancelarCte = new() { Location = new Point(150, 8), Size = new Size(110, 27), Text = "Cancelar CT-e", UseVisualStyleBackColor = true };
     private readonly Button _btnCartaCorrecao = new() { Location = new Point(266, 8), Size = new Size(130, 27), Text = "Carta de correção", UseVisualStyleBackColor = true };
+    private readonly Button _btnDacte = new()
+    {
+        Anchor = AnchorStyles.Top | AnchorStyles.Right,
+        Location = new Point(626, 8),
+        Size = new Size(110, 27),
+        Text = "&DACTE de teste",
+        UseVisualStyleBackColor = true,
+    };
     private CadastrosEmissao _cadastros;
     private bool _ocupado;
     private bool _carregado;
@@ -251,7 +259,7 @@ public partial class FormConsultaCte : Form
         var cte = Selecionado;
         btnAbrir.Enabled = cte is not null;
         btnExcluir.Enabled = cte is { Situacao: SituacaoDocumento.EmDigitacao };
-        _btnCancelarCte.Enabled = _btnCartaCorrecao.Enabled = cte is not null;
+        _btnCancelarCte.Enabled = _btnCartaCorrecao.Enabled = _btnDacte.Enabled = cte is not null;
     }
 
     /// <summary>Rótulo e botões dos eventos do CT-e no rodapé, ao lado do total.</summary>
@@ -260,7 +268,77 @@ public partial class FormConsultaCte : Form
         var rotulo = new Label { AutoSize = true, Location = new Point(96, 14), Text = "Eventos:" };
         _btnCancelarCte.Click += async (_, _) => await ExecutarEventoAsync(TipoEvento.CancelamentoCte);
         _btnCartaCorrecao.Click += async (_, _) => await ExecutarEventoAsync(TipoEvento.CartaCorrecaoCte);
-        pnlRodape.Controls.AddRange([rotulo, _btnCancelarCte, _btnCartaCorrecao]);
+        _btnDacte.Click += async (_, _) => await GerarDacteTesteAsync();
+        pnlRodape.Controls.AddRange([rotulo, _btnCancelarCte, _btnCartaCorrecao, _btnDacte]);
+    }
+
+    /// <summary>
+    /// Gera o DACTE de teste do CT-e selecionado (a partir do XML de teste, em homologação e sem protocolo) e oferece
+    /// salvar e abrir o PDF.
+    /// </summary>
+    private async Task GerarDacteTesteAsync()
+    {
+        const string titulo = "DACTE de teste";
+        if (_ocupado)
+        {
+            return;
+        }
+
+        if (Selecionado is not { } atual)
+        {
+            MessageBox.Show(this, "Selecione um CT-e na lista.", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        _ocupado = true;
+        UseWaitCursor = true;
+        try
+        {
+            var cte = await _cadastros.Ctes.ObterAsync(atual.Id)
+                ?? throw new RegraNegocioException("O CT-e não existe mais. Atualize a lista.");
+            _cadastros = await _carregarCadastros();
+            var (xml, pdf) = await _cadastros.XmlTeste.GerarDacteAsync(cte, _cadastros);
+            UseWaitCursor = false;
+            if (pdf is null)
+            {
+                AvisosCadastro.HaPendencias(this, titulo, xml.Pendencias.Count > 0 ? xml.Pendencias : ["O XML do CT-e não pôde ser gerado."]);
+                return;
+            }
+
+            using var dialogo = new SaveFileDialog
+            {
+                Title = titulo,
+                Filter = "Arquivo PDF (*.pdf)|*.pdf",
+                FileName = $"{xml.Chave}-teste-dacte.pdf",
+            };
+            if (dialogo.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            await File.WriteAllBytesAsync(dialogo.FileName, pdf);
+            if (MessageBox.Show(this, "DACTE de teste salvo (homologação, sem valor fiscal). Deseja abrir o arquivo?", titulo,
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+            {
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dialogo.FileName) { UseShellExecute = true });
+            }
+        }
+        catch (RegraNegocioException erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, string.Join(Environment.NewLine, erro.Pendencias), titulo, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (Exception erro)
+        {
+            UseWaitCursor = false;
+            MessageBox.Show(this, $"Não foi possível gerar o DACTE.{Environment.NewLine}{erro.GetBaseException().Message}",
+                titulo, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            UseWaitCursor = false;
+            _ocupado = false;
+        }
     }
 
     /// <summary>
