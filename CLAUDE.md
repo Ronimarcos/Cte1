@@ -108,3 +108,6 @@ Preferências do responsável pelo projeto:
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
   - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).
   - [x] A3: proteção local (banco em %LOCALAPPDATA% com cópia do antigo, DPAPI do usuário com recriptografia na abertura).
+- [ ] Versão web (fase 2, `docs/LEVANTAMENTO.md` §9): Blazor no mesmo repositório (`src/Emissor.Web`), PostgreSQL, só A1 no servidor, login com segundo fator, desktop usando os dados pela API da web.
+  - [x] W0: levantamento e decisões.
+  - [ ] W1: núcleo pronto para servidor (PostgreSQL, segredos do servidor, isolar o que é só do Windows).
