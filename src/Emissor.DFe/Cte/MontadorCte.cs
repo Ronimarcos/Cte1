@@ -50,6 +50,38 @@ public static class MontadorCte
     /// <summary>Namespace do leiaute do CT-e.</summary>
     public const string NamespaceCte = "http://www.portalfiscal.inf.br/cte";
 
+    /// <summary>
+    /// IBS/CBS do Simples Nacional sem regime regular (NT 2026.005, item 2.2): CST e cClassTrib do cadastro da empresa
+    /// e o grupo gTribSN com as alíquotas efetivas e os valores sobre o valor total da prestação (a mesma receita
+    /// bruta do item que a NT indica); sem o grupo gIBSCBS, proibido nesse caso (rejeição 1100).
+    /// </summary>
+    /// <param name="empresa">Emitente, com as alíquotas conferidas antes da montagem.</param>
+    /// <param name="valorPrestacao">Valor total da prestação (<c>vTPrest</c>).</param>
+    public static TTribCTe IbsCbsSimples(Empresa empresa, decimal valorPrestacao)
+    {
+        var aliquotaIbs = empresa.AliquotaIbsSimples ?? 0;
+        var aliquotaCbs = empresa.AliquotaCbsSimples ?? 0;
+        return new TTribCTe
+        {
+            Cst = empresa.CstIbsCbs,
+            CClassTrib = empresa.ClassTribIbsCbs,
+            GTribSn = new TTribSn
+            {
+                Gibssn = new TTribSnGibssn { Pibssn = Aliquota(aliquotaIbs), Vibssn = Valor(ValorTributo(valorPrestacao, aliquotaIbs)) },
+                Gcbssn = new TTribSnGcbssn { Pcbssn = Aliquota(aliquotaCbs), Vcbssn = Valor(ValorTributo(valorPrestacao, aliquotaCbs)) },
+            },
+        };
+    }
+
+    /// <summary>Valor do tributo: base × alíquota (%), arredondado em 2 casas (meio para cima).</summary>
+    /// <param name="baseCalculo">Base de cálculo.</param>
+    /// <param name="aliquota">Alíquota em %.</param>
+    public static decimal ValorTributo(decimal baseCalculo, decimal aliquota) =>
+        decimal.Round(baseCalculo * aliquota / 100m, 2, MidpointRounding.AwayFromZero);
+
+    /// <summary>Alíquota no formato <c>TDec_0302_04</c> (2 a 4 casas, ponto decimal).</summary>
+    private static string Aliquota(decimal aliquota) => aliquota.ToString("0.00##", System.Globalization.CultureInfo.InvariantCulture);
+
     /// <summary>Monta o CT-e; as pendências dizem o que falta nos cadastros ou no documento.</summary>
     /// <param name="dados">CT-e, empresa e cadastros.</param>
     public static CteMontado Montar(DadosEmissaoCte dados)
@@ -59,6 +91,14 @@ public static class MontadorCte
         if (empresa.Crt != Crt.SimplesNacional)
         {
             pendencias.Add("Nesta versão o XML só é montado para empresa do Simples Nacional (CRT 1)");
+        }
+        else if (!empresa.IbsCbsPeloSimples)
+        {
+            pendencias.Add("Nesta versão o IBS/CBS só é tratado para o Simples Nacional sem opção pelo regime regular: deixe o \"Regime IBS/CBS\" da empresa em branco");
+        }
+        else if (empresa.AliquotaIbsSimples is null || empresa.AliquotaCbsSimples is null)
+        {
+            pendencias.Add("Informe no cadastro da empresa as alíquotas efetivas do IBS e da CBS no Simples Nacional");
         }
 
         if (!Dominio.Regras.Formatos.CnpjValido(empresa.Cnpj))
@@ -136,6 +176,11 @@ public static class MontadorCte
             Imp = new TcTeInfCteImp
             {
                 Icms = new TImp { Icmssn = new TImpIcmssn { Cst = TImpIcmssnCst.Item90, IndSn = TImpIcmssnIndSn.Item1 } },
+                Ibscbs = IbsCbsSimples(empresa, cte.ValorTotalPrestacao),
+
+                // NT 2026.004: em 2026 o total do DF-e repete o valor da prestação (sem somar IBS e CBS); no Simples
+                // sem regime regular não há gIBSCBS a somar.
+                VTotDFe = Valor(cte.ValorTotalPrestacao),
             },
         };
 

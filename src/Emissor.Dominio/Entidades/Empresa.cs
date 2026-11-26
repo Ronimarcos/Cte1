@@ -33,6 +33,30 @@ public class Empresa : EntidadeBase
     /// <summary>Regime do IBS/CBS (<c>emit/tpRegimeIBSCBS</c>, NT 2026.005), opcional.</summary>
     public RegimeIbsCbs? RegimeIbsCbs { get; set; }
 
+    /// <summary>CST do IBS/CBS do frete (<c>imp/IBSCBS/CST</c>, 3 dígitos); padrão 000, tributação integral.</summary>
+    public string CstIbsCbs { get; set; } = "000";
+
+    /// <summary>Classificação tributária do frete (<c>imp/IBSCBS/cClassTrib</c>, 6 dígitos); padrão 000001.</summary>
+    public string ClassTribIbsCbs { get; set; } = "000001";
+
+    /// <summary>
+    /// Alíquota efetiva do IBS no Simples Nacional, em % (<c>gTribSN/gIBSSN/pIBSSN</c>, até 4 casas). Obrigatória
+    /// para emitir CT-e com CRT 1 sem regime regular.
+    /// </summary>
+    public decimal? AliquotaIbsSimples { get; set; }
+
+    /// <summary>
+    /// Alíquota efetiva da CBS no Simples Nacional, em % (<c>gTribSN/gCBSSN/pCBSSN</c>, até 4 casas). Obrigatória
+    /// para emitir CT-e com CRT 1 sem regime regular.
+    /// </summary>
+    public decimal? AliquotaCbsSimples { get; set; }
+
+    /// <summary>
+    /// Indica se o IBS/CBS vai pelo grupo do Simples Nacional (<c>gTribSN</c>): CRT 1 sem opção pelo regime regular
+    /// (NT 2026.005, item 2.2). É o único caso tratado pelo emissor por enquanto.
+    /// </summary>
+    public bool IbsCbsPeloSimples => Crt == Enums.Crt.SimplesNacional && RegimeIbsCbs is null;
+
     /// <summary>RNTRC da empresa (8 dígitos).</summary>
     public string Rntrc { get; set; } = string.Empty;
 
@@ -63,6 +87,11 @@ public class Empresa : EntidadeBase
         if (IeSt.Length > 0 && !Formatos.IeValida(IeSt)) faltando.Add("IE do substituto tributário com 2 a 14 dígitos");
         if (Crt is null) faltando.Add("CRT");
         if (!Formatos.RntrcValido(Rntrc)) faltando.Add("RNTRC com 8 dígitos");
+        if (CstIbsCbs.Length != 3 || !CstIbsCbs.All(char.IsAsciiDigit)) faltando.Add("CST do IBS/CBS com 3 dígitos");
+        if (ClassTribIbsCbs.Length != 6 || !ClassTribIbsCbs.All(char.IsAsciiDigit)) faltando.Add("Classificação tributária (cClassTrib) com 6 dígitos");
+        if (AliquotaIbsSimples is < 0 or >= 100 || AliquotaCbsSimples is < 0 or >= 100) faltando.Add("Alíquotas do IBS e da CBS no Simples entre 0 e 99,99 %");
+        if (AliquotaIbsSimples is { } ibs && decimal.Round(ibs, 4) != ibs || AliquotaCbsSimples is { } cbs && decimal.Round(cbs, 4) != cbs)
+            faltando.Add("Alíquotas do IBS e da CBS no Simples com até 4 casas decimais");
         Endereco.Validar(faltando);
         if (Fone.Length > 0 && !Formatos.FoneValido(Fone)) faltando.Add("Telefone com 6 a 14 dígitos");
         if (Email.Length > 0 && !Formatos.EmailValido(Email)) faltando.Add("E-mail válido");

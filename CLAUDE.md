@@ -95,6 +95,7 @@ Preferências do responsável pelo projeto:
     - [ ] P4c: transmissão em homologação e numeração da série.
       - [x] P4c0: webservices de homologação conferidos nas tabelas oficiais (`docs/LEVANTAMENTO.md` §8.3).
       - [x] P4c1: confiança ICP-Brasil, cliente SOAP com certificado e status do serviço (falta teste real com certificado da empresa).
+      - [x] P4c1b: IBS/CBS do Simples Nacional no CT-e (`gTribSN`, alíquotas e classificação no cadastro da empresa; homologação com CBS 0,90 % e IBS 0,10 %).
       - [ ] P4c2: autorização do CT-e em homologação.
       - [ ] P4c3: autorização do MDF-e em homologação.
     - [ ] P4d: eventos (o CT-e 4.00 não tem mais inutilização).

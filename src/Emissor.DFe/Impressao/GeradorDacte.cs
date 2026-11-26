@@ -201,6 +201,10 @@ public static class GeradorDacte
             Campo(linha.RelativeItem(2), "VALOR DO ICMS", dados.ValorIcms);
             Campo(linha.RelativeItem(1), "% RED. BC", dados.ReducaoBase);
         });
+        if (dados.IbsCbsSimples.Length > 0)
+        {
+            coluna.Item().Element(c => Campo(c, "IBS/CBS - SIMPLES NACIONAL", dados.IbsCbsSimples));
+        }
 
         coluna.Item().Element(c => Titulo(c, "DOCUMENTOS ORIGINÁRIOS"));
         coluna.Item().Border(Borda).Padding(2).Table(tabela =>

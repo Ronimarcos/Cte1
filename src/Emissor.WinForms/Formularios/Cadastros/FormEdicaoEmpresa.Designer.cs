@@ -45,6 +45,14 @@ partial class FormEdicaoEmpresa
         cboCrt = new ComboBox();
         lblRegimeIbsCbs = new Label();
         cboRegimeIbsCbs = new ComboBox();
+        lblCstIbsCbs = new Label();
+        txtCstIbsCbs = new TextBox();
+        lblClassTrib = new Label();
+        txtClassTrib = new TextBox();
+        lblAliquotaIbs = new Label();
+        txtAliquotaIbs = new TextBox();
+        lblAliquotaCbs = new Label();
+        txtAliquotaCbs = new TextBox();
         ucEndereco = new UcEndereco();
         lblFone = new Label();
         txtFone = new TextBox();
@@ -213,74 +221,142 @@ partial class FormEdicaoEmpresa
         cboRegimeIbsCbs.TabIndex = 15;
         cboRegimeIbsCbs.KeyDown += cboRegimeIbsCbs_KeyDown;
         //
+        // lblCstIbsCbs
+        //
+        lblCstIbsCbs.AutoSize = true;
+        lblCstIbsCbs.Location = new Point(12, 212);
+        lblCstIbsCbs.Name = "lblCstIbsCbs";
+        lblCstIbsCbs.Size = new Size(70, 15);
+        lblCstIbsCbs.TabIndex = 16;
+        lblCstIbsCbs.Text = "CST IBS/CBS";
+        //
+        // txtCstIbsCbs
+        //
+        txtCstIbsCbs.Location = new Point(12, 230);
+        txtCstIbsCbs.MaxLength = 3;
+        txtCstIbsCbs.Name = "txtCstIbsCbs";
+        txtCstIbsCbs.Size = new Size(70, 23);
+        txtCstIbsCbs.TabIndex = 17;
+        //
+        // lblClassTrib
+        //
+        lblClassTrib.AutoSize = true;
+        lblClassTrib.Location = new Point(94, 212);
+        lblClassTrib.Name = "lblClassTrib";
+        lblClassTrib.Size = new Size(64, 15);
+        lblClassTrib.TabIndex = 18;
+        lblClassTrib.Text = "cClassTrib";
+        //
+        // txtClassTrib
+        //
+        txtClassTrib.Location = new Point(94, 230);
+        txtClassTrib.MaxLength = 6;
+        txtClassTrib.Name = "txtClassTrib";
+        txtClassTrib.Size = new Size(90, 23);
+        txtClassTrib.TabIndex = 19;
+        //
+        // lblAliquotaIbs
+        //
+        lblAliquotaIbs.AutoSize = true;
+        lblAliquotaIbs.Location = new Point(196, 212);
+        lblAliquotaIbs.Name = "lblAliquotaIbs";
+        lblAliquotaIbs.Size = new Size(166, 15);
+        lblAliquotaIbs.TabIndex = 20;
+        lblAliquotaIbs.Text = "Alíq. efetiva IBS no SN (%)";
+        //
+        // txtAliquotaIbs
+        //
+        txtAliquotaIbs.Location = new Point(196, 230);
+        txtAliquotaIbs.MaxLength = 9;
+        txtAliquotaIbs.Name = "txtAliquotaIbs";
+        txtAliquotaIbs.Size = new Size(150, 23);
+        txtAliquotaIbs.TabIndex = 21;
+        //
+        // lblAliquotaCbs
+        //
+        lblAliquotaCbs.AutoSize = true;
+        lblAliquotaCbs.Location = new Point(358, 212);
+        lblAliquotaCbs.Name = "lblAliquotaCbs";
+        lblAliquotaCbs.Size = new Size(166, 15);
+        lblAliquotaCbs.TabIndex = 22;
+        lblAliquotaCbs.Text = "Alíq. efetiva CBS no SN (%)";
+        //
+        // txtAliquotaCbs
+        //
+        txtAliquotaCbs.Location = new Point(358, 230);
+        txtAliquotaCbs.MaxLength = 9;
+        txtAliquotaCbs.Name = "txtAliquotaCbs";
+        txtAliquotaCbs.Size = new Size(150, 23);
+        txtAliquotaCbs.TabIndex = 23;
+        //
         // ucEndereco
         //
-        ucEndereco.Location = new Point(12, 212);
+        ucEndereco.Location = new Point(12, 262);
         ucEndereco.Name = "ucEndereco";
         ucEndereco.Size = new Size(616, 94);
-        ucEndereco.TabIndex = 16;
+        ucEndereco.TabIndex = 24;
         //
         // lblFone
         //
         lblFone.AutoSize = true;
-        lblFone.Location = new Point(12, 312);
+        lblFone.Location = new Point(12, 362);
         lblFone.Name = "lblFone";
         lblFone.Size = new Size(51, 15);
-        lblFone.TabIndex = 17;
+        lblFone.TabIndex = 25;
         lblFone.Text = "Telefone";
         //
         // txtFone
         //
-        txtFone.Location = new Point(12, 330);
+        txtFone.Location = new Point(12, 380);
         txtFone.MaxLength = 14;
         txtFone.Name = "txtFone";
         txtFone.Size = new Size(160, 23);
-        txtFone.TabIndex = 18;
+        txtFone.TabIndex = 26;
         //
         // lblEmail
         //
         lblEmail.AutoSize = true;
-        lblEmail.Location = new Point(184, 312);
+        lblEmail.Location = new Point(184, 362);
         lblEmail.Name = "lblEmail";
         lblEmail.Size = new Size(41, 15);
-        lblEmail.TabIndex = 19;
+        lblEmail.TabIndex = 27;
         lblEmail.Text = "E-mail";
         //
         // txtEmail
         //
-        txtEmail.Location = new Point(184, 330);
+        txtEmail.Location = new Point(184, 380);
         txtEmail.MaxLength = 60;
         txtEmail.Name = "txtEmail";
         txtEmail.Size = new Size(260, 23);
-        txtEmail.TabIndex = 20;
+        txtEmail.TabIndex = 28;
         //
         // lblAmbiente
         //
         lblAmbiente.AutoSize = true;
-        lblAmbiente.Location = new Point(456, 312);
+        lblAmbiente.Location = new Point(456, 362);
         lblAmbiente.Name = "lblAmbiente";
         lblAmbiente.Size = new Size(108, 15);
-        lblAmbiente.TabIndex = 21;
+        lblAmbiente.TabIndex = 29;
         lblAmbiente.Text = "Ambiente padrão *";
         //
         // cboAmbiente
         //
         cboAmbiente.DropDownStyle = ComboBoxStyle.DropDownList;
         cboAmbiente.FormattingEnabled = true;
-        cboAmbiente.Location = new Point(456, 330);
+        cboAmbiente.Location = new Point(456, 380);
         cboAmbiente.Name = "cboAmbiente";
         cboAmbiente.Size = new Size(172, 23);
-        cboAmbiente.TabIndex = 22;
+        cboAmbiente.TabIndex = 30;
         //
         // pnlBotoes
         //
         pnlBotoes.Controls.Add(btnSalvar);
         pnlBotoes.Controls.Add(btnCancelar);
         pnlBotoes.Dock = DockStyle.Bottom;
-        pnlBotoes.Location = new Point(0, 368);
+        pnlBotoes.Location = new Point(0, 418);
         pnlBotoes.Name = "pnlBotoes";
         pnlBotoes.Size = new Size(640, 48);
-        pnlBotoes.TabIndex = 23;
+        pnlBotoes.TabIndex = 31;
         //
         // btnSalvar
         //
@@ -310,7 +386,7 @@ partial class FormEdicaoEmpresa
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = btnCancelar;
-        ClientSize = new Size(640, 416);
+        ClientSize = new Size(640, 466);
         Controls.Add(lblRazaoSocial);
         Controls.Add(txtRazaoSocial);
         Controls.Add(lblNomeFantasia);
@@ -328,6 +404,14 @@ partial class FormEdicaoEmpresa
         Controls.Add(cboCrt);
         Controls.Add(lblRegimeIbsCbs);
         Controls.Add(cboRegimeIbsCbs);
+        Controls.Add(lblCstIbsCbs);
+        Controls.Add(txtCstIbsCbs);
+        Controls.Add(lblClassTrib);
+        Controls.Add(txtClassTrib);
+        Controls.Add(lblAliquotaIbs);
+        Controls.Add(txtAliquotaIbs);
+        Controls.Add(lblAliquotaCbs);
+        Controls.Add(txtAliquotaCbs);
         Controls.Add(ucEndereco);
         Controls.Add(lblFone);
         Controls.Add(txtFone);
@@ -367,6 +451,14 @@ partial class FormEdicaoEmpresa
     private ComboBox cboCrt;
     private Label lblRegimeIbsCbs;
     private ComboBox cboRegimeIbsCbs;
+    private Label lblCstIbsCbs;
+    private TextBox txtCstIbsCbs;
+    private Label lblClassTrib;
+    private TextBox txtClassTrib;
+    private Label lblAliquotaIbs;
+    private TextBox txtAliquotaIbs;
+    private Label lblAliquotaCbs;
+    private TextBox txtAliquotaCbs;
     private UcEndereco ucEndereco;
     private Label lblFone;
     private TextBox txtFone;

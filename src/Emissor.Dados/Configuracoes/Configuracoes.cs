@@ -73,7 +73,12 @@ internal sealed class ConfiguracaoEmpresa : IEntityTypeConfiguration<Empresa>
         builder.Property(e => e.Rntrc).HasMaxLength(8).IsRequired();
         builder.Property(e => e.Fone).HasMaxLength(14).IsRequired();
         builder.Property(e => e.Email).HasMaxLength(60).IsRequired();
+        builder.Property(e => e.CstIbsCbs).HasMaxLength(3).IsRequired().HasDefaultValue("000");
+        builder.Property(e => e.ClassTribIbsCbs).HasMaxLength(6).IsRequired().HasDefaultValue("000001");
+        builder.Property(e => e.AliquotaIbsSimples).HasPrecision(7, 4);
+        builder.Property(e => e.AliquotaCbsSimples).HasPrecision(7, 4);
         builder.Ignore(e => e.Documento);
+        builder.Ignore(e => e.IbsCbsPeloSimples);
         builder.OwnsOne(e => e.Endereco, ConfiguracaoEndereco.Mapear);
         builder.Navigation(e => e.Endereco).IsRequired();
         builder.HasIndex(e => e.Cnpj).IsUnique().HasFilter("\"Cnpj\" <> ''");
