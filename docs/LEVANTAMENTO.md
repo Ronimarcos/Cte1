@@ -254,6 +254,9 @@ Na v1 o grupo `infANTT/infCIOT` (CIOT + CPF/CNPJ do responsável) é digitado pe
 | 13 | DACTE e Reforma Tributária: o Anexo II do MOC (DACTE v3.00a) é anterior ao IBS/CBS e as NT 2026.004 e 2026.005 não mudam o DACTE. Para CRT 1 sem regime regular não há grupo IBS/CBS no XML; acompanhar nota técnica de leiaute do DACTE com IBS/CBS antes de usar o regime regular | Desenvolvimento |
 | 14 | CNPJ alfanumérico na chave: o CODE-128C só codifica dígitos; com letras na chave o DACTE sai sem o código de barras (só a chave e o QR Code). Acompanhar a orientação oficial de código de barras para a chave alfanumérica | Desenvolvimento |
 | 15 | ~~Trazer o Anexo II do MOC MDF-e (manual do DAMDFE) para `docs/moc`~~ — encerrada em 26/11/2026: `MOC_MDFe_Anexo II - DAMDFE_v3.00b.docx` (versão 3.00B de agosto/2021, em Word, como publicado no portal do MDF-e), conferido | Roni |
+| 16 | Domínio próprio da versão web: a empresa já tem; informar o nome para a configuração de HTTPS e do e-mail de recuperação (§9) | Roni |
+| 17 | Provedor de nuvem da versão web (Azure, AWS ou outro), com PostgreSQL gerenciado, backup e cofre de chaves; decidir antes da publicação (W6) | Roni |
+| 18 | Ambiente de desenvolvimento da web: instalar Docker Desktop ou PostgreSQL na máquina de desenvolvimento (hoje não há nenhum dos dois); necessário para a W1 | Roni / TI |
 
 ## 8. Próximos passos
 
@@ -403,3 +406,51 @@ Requisito: o emissor pode emitir para várias empresas; cada login só vê e alt
 | A3 | Proteção local: banco padrão em `%LOCALAPPDATA%\Cte1\emissor.db` (pasta do usuário do Windows; o `appsettings.json` continua podendo indicar outro caminho). Na primeira abertura, se o banco novo não existe e existe o antigo em `C:\ProgramData\Cte1\emissor.db`, o app pergunta se copia (cópia de segurança do próprio SQLite, em arquivo temporário renomeado no fim; o original não é alterado) e depois pergunta se exclui o antigo (padrão "Não", com aviso de que outros usuários do Windows ainda o leem). Certificados A1 protegidos pela DPAPI do usuário do Windows (`ProtetorDpapi`, entropia `v2`); na preparação do banco, os gravados com a DPAPI da máquina (`ProtetorDpapiMaquina`, só leitura) são regravados (`RecriptografiaCertificados`, sem auditoria por ser operação interna; rodar de novo não muda nada) e os que não abrem com nenhuma proteção são listados para novo cadastro. **Consequências:** cada usuário do Windows tem o seu banco; se a senha do Windows for redefinida pela TI (e não trocada pelo próprio usuário), a chave da DPAPI pode se perder e os certificados A1 precisam ser cadastrados de novo (o resto do banco não é afetado); a cópia de segurança é o `emissor.db` da pasta de cada usuário | Concluída |
 
 **Limite do desktop:** com banco local, o login protege o uso pela tela; quem copia o arquivo do banco ainda lê os cadastros (não as senhas, que são hash, nem os certificados, depois da A3). O isolamento completo vem com a versão web e o banco no servidor; por isso as regras de acesso ficam no Dominio e no Dados, para a web reaproveitar.
+
+## 9. Versão web (fase 2) — levantamento W0 (26/11/2026)
+
+**Objetivo:** levar o emissor para a web em domínio próprio, reaproveitando `Emissor.Dominio`, `Emissor.Dados` e `Emissor.DFe`, no **mesmo repositório e na mesma solution** (novo projeto `src/Emissor.Web`), para que uma mudança de regra fiscal valha para o desktop e para a web no mesmo commit e com os mesmos testes.
+
+### 9.1 Decisões (respostas do responsável)
+
+| Tema | Decisão | Consequência |
+|---|---|---|
+| Usuários | Só a equipe da transportadora (administrador e operador), de qualquer lugar | Mesmos perfis, usuários e alçada por empresa da A1 (`Usuario`, `HashSenha`, `IContextoAcesso`); sem portal de clientes nem multi-inquilino (SaaS) nesta fase |
+| Certificado na web | **Só A1** | O servidor não enxerga token A3; o A1 fica no banco da web criptografado com uma chave do servidor (nova implementação de `IProtetorSegredos`, ex.: Data Protection do ASP.NET com as chaves num cofre), não com a DPAPI. Quem usa A3 assina no desktop |
+| Hospedagem | Nuvem gerenciada, **provedor ainda não definido** | Desenvolvimento independente de provedor (contêiner com PostgreSQL); a escolha do provedor (pendência 17) fica para antes da publicação |
+| Tela | **Blazor** (ASP.NET Core, renderização interativa no servidor) | Tudo em C#; validações, textos e regras do Dominio reaproveitados |
+| Desktop e web | **O desktop passa a usar os dados da web, pela API da web** | O banco fica fechado na nuvem (nunca exposto à internet nem com senha nas máquinas); o desktop chama a API com o login do usuário, com a mesma alçada e auditoria. O A3 continua assinando no desktop. Os dados atuais do SQLite são migrados uma vez para o PostgreSQL |
+| Login | Usuário, senha e **segundo fator** (aplicativo autenticador, TOTP) | Novo cadastro do segundo fator por usuário; recuperação de acesso pelo administrador e por e-mail do domínio |
+| Domínio | A empresa **já tem** domínio próprio (nome a registrar, pendência 16) | HTTPS e e-mail de recuperação no domínio na publicação |
+
+### 9.2 Arquitetura proposta
+
+```
+Cte1.sln
+├── src/
+│   ├── Emissor.Dominio      → comum
+│   ├── Emissor.Dados        → comum (SQLite no desktop isolado; PostgreSQL na web)
+│   ├── Emissor.DFe          → comum (assinatura A1 no servidor; A3 só no desktop)
+│   ├── Emissor.WinForms     → desktop: modo local (SQLite) e, depois, modo conectado (API da web)
+│   └── Emissor.Web          → novo: Blazor + API para o desktop
+└── tests/
+    └── Emissor.Testes       → os mesmos testes contra SQLite e PostgreSQL
+```
+
+- **Banco:** provedor do EF Core escolhido pela configuração; migrações separadas por banco (as atuais usam recursos do SQLite, como os gatilhos da auditoria e decimais gravados como texto).
+- **Segredos:** `IProtetorSegredos` com uma implementação por ambiente (DPAPI no desktop; chave do servidor na web). O que é só do Windows (DPAPI, repositório de certificados para o A3) fica isolado para a web não depender dele.
+- **Transmissão na web:** o servidor assina com o A1 e transmite. **Transmissão pelo desktop conectado com A3:** o desktop assina localmente e envia (detalhar na fatia da API).
+
+### 9.3 Fatias
+
+| Fatia | Conteúdo | Situação |
+|---|---|---|
+| W0 | Levantamento e decisões (esta seção) | Concluída |
+| W1 | Núcleo pronto para servidor: PostgreSQL no Dados (provedor por configuração, migrações próprias, gatilhos da auditoria), `IProtetorSegredos` do servidor, isolar o que é só do Windows; testes também contra PostgreSQL. Depende de ambiente com PostgreSQL ou Docker (pendência 18) | Pendente |
+| W2 | `Emissor.Web` (Blazor): login com segundo fator, troca de empresa pela alçada, auditoria e cadastros | Pendente |
+| W3 | API para o desktop (autenticação do usuário por token, mesma alçada) e modo conectado do desktop; migração única do SQLite para o PostgreSQL | Pendente |
+| W4 | Emissão de CT-e e MDF-e na web (assistentes, XML de teste, DACTE e DAMDFE para baixar) | Pendente |
+| W5 | Transmissão e eventos pela web com o A1 do servidor, depois da P4c2, P4c3 e P4d2 validadas no desktop | Pendente |
+| W6 | Publicação: provedor de nuvem, domínio e HTTPS, backup, cofre de chaves, monitoramento, LGPD | Pendente |
+
+**Prioridade:** quando o certificado da empresa chegar, a P4c2 e a P4c3 (desktop) voltam a ser a prioridade; a web segue em paralelo, sem mexer no motor DF-e até a W5.
