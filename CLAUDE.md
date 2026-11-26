@@ -98,7 +98,7 @@ Preferências do responsável pelo projeto:
       - [ ] P4c2: autorização do CT-e em homologação.
       - [ ] P4c3: autorização do MDF-e em homologação.
     - [ ] P4d: eventos (cancelamento, encerramento, inutilização, CC-e).
-- [ ] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
+- [x] Controle de acesso e auditoria (`docs/LEVANTAMENTO.md` §8.5).
   - [x] A1: usuários, login, perfis administrador/operador e alçada por empresa na camada de dados.
   - [x] A2: auditoria (registro automático das gravações, eventos de login e consulta do administrador).
   - [x] A3: proteção local (banco em %LOCALAPPDATA% com cópia do antigo, DPAPI do usuário com recriptografia na abertura).
